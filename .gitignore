@@ -1,3 +1,6 @@
+<<<<<<< HEAD
+/venv/
+=======
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -102,3 +105,4 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+>>>>>>> ceb966e5982d2cd746c149bdcbcccd8c368f2ec3

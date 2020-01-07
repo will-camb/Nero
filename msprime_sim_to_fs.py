@@ -4,8 +4,8 @@ import msprime
 import os
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-out", help="Path and filename to save the tree sequence and finestructure files to",
-                    required=True)
+parser.add_argument("-out", help="Path and filename to save the tree sequence to e.g. Documents/msprimetest NB directory must already exist", required=True)
+parser.add_argument("-path", help="Path to save FINESTRUCTURE input files to e.g. Documents/msprime2fstest", required=True)
 args = parser.parse_args()
 
 # initial population sizes:
@@ -114,7 +114,7 @@ print(tree.draw(format="unicode"))  # Plot the first tree in the tree sequence
 
 # Use tree_sequence to create finestructure input files
 
-path = ("/Users/williambarrie/" + args.out)
+path = ("/Users/williambarrie/" + args.path)
 if not os.path.exists(path):
     os.makedirs(path)
 
@@ -141,7 +141,7 @@ for i in range(1, len(listofsites)):
     else:
         uniquelistofsites.append(listofsites[i])
 
-with open("phasefile", "w") as file:
+with open(os.path.join(path, "phasefile"), "w") as file:
     file.write(str(number_of_inds) + "\n")
     file.write(str(numsnps) + "\n")
     file.write("P")
@@ -152,11 +152,7 @@ with open("phasefile", "w") as file:
         file.write(str(hap) + "\n")
 
 # recomb_file
-with open("recombfile", "w") as file:
+with open(os.path.join(path, "recombfile"), "w") as file:
     file.write("start.pos " + "recom.rate.perbp" + "\n")
     for site in uniquelistofsites:
         file.write(str(site) + " " + "1e-7" + "\n")
-
-# To do: save these files to directory
-
-# Save to github - maybe split into separate code files - one for simulation, one for msprime output to fs input

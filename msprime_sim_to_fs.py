@@ -1,10 +1,11 @@
 import math
 import argparse
 import msprime
+import os
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-out", help="Path and filename to save the tree sequence", required=True)
-parser.add_argument("-path", help='Path to save finestructure files to', required=True)
+parser.add_argument("-out", help="Path and filename to save the tree sequence and finestructure files to",
+                    required=True)
 args = parser.parse_args()
 
 # initial population sizes:
@@ -98,7 +99,8 @@ dd.print_history()
 
 # Simulate chromosome 3 only
 tree_sequence = msprime.simulate(
-    length=198295000, recombination_rate=1e-8,
+    length=198295000,
+    recombination_rate=1e-8,
     mutation_rate=1.25e-8,
     population_configurations=population_configurations,
     demographic_events=demographic_events,
@@ -106,14 +108,18 @@ tree_sequence = msprime.simulate(
 )
 
 tree_sequence.dump(
-    path="/Users/williambarrie/Desktop/msprime_model/" + args.out)  # Saving tree.sequence object to desired directory
+    path="/Users/williambarrie/" + args.out)  # Saving tree.sequence object to desired directory
 tree = tree_sequence.first()
 print(tree.draw(format="unicode"))  # Plot the first tree in the tree sequence
 
 # Use tree_sequence to create finestructure input files
 
+path = ("/Users/williambarrie/" + args.out)
+if not os.path.exists(path):
+    os.makedirs(path)
+
 # pop_ids file
-with open("pop_ids", "w") as file:
+with open(os.path.join(path, "pop_ids"), "w") as file:
     for i in range(len(indnames)):
         file.write(indnames[i] + " " + indpopnames[i] + " 1\n")
 
@@ -130,7 +136,7 @@ numsnps = len(listofsites)
 
 uniquelistofsites = [listofsites[0]]
 for i in range(1, len(listofsites)):
-    if (listofsites[i] <= listofsites[i - 1]):
+    if listofsites[i] <= listofsites[i - 1]:
         uniquelistofsites.append(listofsites[i - 1] + 1)
     else:
         uniquelistofsites.append(listofsites[i])
@@ -152,8 +158,5 @@ with open("recombfile", "w") as file:
         file.write(str(site) + " " + "1e-7" + "\n")
 
 # To do: save these files to directory
-<<<<<<< HEAD
+
 # Save to github - maybe split into separate code files - one for simulation, one for msprime output to fs input
-=======
-# Save to github - maybe split into separate code files - one for simulation, one for msprime output to fs input
->>>>>>> eed323dba12fe6a0cf766c34327e83ee816a4cfb

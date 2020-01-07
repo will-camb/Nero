@@ -152,4 +152,8 @@ with open("recombfile", "w") as file:
         file.write(str(site) + " " + "1e-7" + "\n")
 
 # To do: save these files to directory
+<<<<<<< HEAD
 # Save to github - maybe split into separate code files - one for simulation, one for msprime output to fs input
+=======
+# Save to github - maybe split into separate code files - one for simulation, one for msprime output to fs input
+>>>>>>> eed323dba12fe6a0cf766c34327e83ee816a4cfb

@@ -134,6 +134,7 @@ for site in tree_sequence.sites():
     listofsites.append(math.floor(site.position))
 numsnps = len(listofsites)
 
+#Ensure all SNP sites are unique
 uniquelistofsites = [listofsites[0]]
 for i in range(1, len(listofsites)):
     if listofsites[i] <= listofsites[i - 1]:
@@ -141,12 +142,17 @@ for i in range(1, len(listofsites)):
     else:
         uniquelistofsites.append(listofsites[i])
 
+#Run again in case there are three the same in a row
 uniquelistofsites2 = [uniquelistofsites[0]]
 for i in range(1, len(uniquelistofsites)):
     if uniquelistofsites[i] <= uniquelistofsites[i - 1]:
         uniquelistofsites2.append(uniquelistofsites[i - 1] + 1)
     else:
         uniquelistofsites2.append(uniquelistofsites[i])
+
+#Test if all sites are unique, otherwise error message
+if uniquelistofsites2 != set(uniquelistofsites2):
+    print("Error: some SNPs have same location - need to edit")
 
 with open(os.path.join(path, "phasefile"), "w") as file:
     file.write(str(number_of_inds) + "\n")

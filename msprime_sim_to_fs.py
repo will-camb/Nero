@@ -29,7 +29,7 @@ T_basal = 1500
 # Migration
 hg_mig_rate = 2.5e-5  # Unsure
 migration_matrix = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
-nhaps = [10, 20, 20, 10, 10]
+nhaps = [20, 40, 40, 20, 20]
 times = [0, 200, 180, 200, 200]
 popnames = ["modern", "neolithic", "steppe", "WHG", "EHG"]
 populations = [0, 0, 1, 2, 3]
@@ -141,11 +141,18 @@ for i in range(1, len(listofsites)):
     else:
         uniquelistofsites.append(listofsites[i])
 
+uniquelistofsites2 = [uniquelistofsites[0]]
+for i in range(1, len(uniquelistofsites)):
+    if uniquelistofsites[i] <= uniquelistofsites[i - 1]:
+        uniquelistofsites2.append(uniquelistofsites[i - 1] + 1)
+    else:
+        uniquelistofsites2.append(uniquelistofsites[i])
+
 with open(os.path.join(path, "phasefile"), "w") as file:
     file.write(str(number_of_inds) + "\n")
     file.write(str(numsnps) + "\n")
     file.write("P")
-    for site in uniquelistofsites:
+    for site in uniquelistofsites2:
         file.write(" " + str(site))
     file.write("\n")
     for hap in tree_sequence.haplotypes():
@@ -154,5 +161,5 @@ with open(os.path.join(path, "phasefile"), "w") as file:
 # recomb_file
 with open(os.path.join(path, "recombfile"), "w") as file:
     file.write("start.pos " + "recom.rate.perbp" + "\n")
-    for site in uniquelistofsites:
+    for site in uniquelistofsites2:
         file.write(str(site) + " " + "1e-7" + "\n")

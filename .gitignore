@@ -106,3 +106,9 @@ venv.bak/
 # mypy
 .mypy_cache/
 >>>>>>> ceb966e5982d2cd746c149bdcbcccd8c368f2ec3
+
+
+# added by Will
+.DS_Store
+.idea/misc.xml
+.idea/nero.iml

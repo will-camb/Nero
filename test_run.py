@@ -1,4 +1,4 @@
-from ms_to_fs import RunMsWithFsOutput
+from ms_output_to_fs_input import RunMsWithFsOutput
 
-model = RunMsWithFsOutput(nhaps=[10, 4, 4, 4, 4])
+model = RunMsWithFsOutput(nhaps=[2, 2, 2, 2, 2], length=1982950)
 model.run()

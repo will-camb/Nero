@@ -19,16 +19,22 @@ class RunMsWithFsOutput:
         self.populations = populations
 
     def run(self):
+        #run simulation
         tree_sequence = RunMsPrime(nhaps=self.nhaps, sample_times=self.sample_times, hg_mig_rate=self.hg_mig_rate,
                  length=self.length, recombination_rate=self.recombination_rate, mutation_rate=self.mutation_rate,
                  popnames=self.popnames, populations=self.populations).run_model()
+
         # args for script
         parser = argparse.ArgumentParser()
         parser.add_argument("-out",
                             help="Path and filename to save the tree sequence to e.g. Documents/msprimetest NB directory must already exist",
                             required=True)
-        parser.add_argument("-path", help="Path to save FINESTRUCTURE input files to e.g. Documents/msprime2fstest",
+        parser.add_argument("-path",
+                            help="Path to save FINESTRUCTURE input files to e.g. Documents/msprime2fstest",
                             required=True)
+        parser.add_argument("-seed",
+                            help="If this is None, automatically generated",
+                            required=False)
         args = parser.parse_args()
         tree_sequence.dump(path="/Users/williambarrie/" + args.out)
         path = ("/Users/williambarrie/" + args.path)

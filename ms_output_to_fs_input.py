@@ -26,7 +26,7 @@ class RunMsWithFsOutput:
 
         # args for script
         parser = argparse.ArgumentParser()
-        parser.add_argument("-out_ts",
+        parser.add_argument("-out_ms",
                             help="Path and filename to save the tree sequence to e.g. Documents/msprimetest NB directory must already exist",
                             required=True)
         parser.add_argument("-path_fs",
@@ -36,7 +36,7 @@ class RunMsWithFsOutput:
                             help="If this is None, automatically generated",
                             required=False)
         args = parser.parse_args()
-        tree_sequence.dump(path=args.out_ts)
+        tree_sequence.dump(path=args.out_ms)
         path = args.path_fs
         if not os.path.exists(path):
             os.makedirs(path)

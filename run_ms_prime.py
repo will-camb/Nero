@@ -25,6 +25,7 @@ class RunMsPrime:
         N_chg = 10000
         N_A = 5000  # Ancestor of WHG and EHG
         N_B = 5000  # Ancestor of CHG and Neolithic farmers
+
         # Time of events
         T_modern = 170
         T_steppe = 200
@@ -32,6 +33,7 @@ class RunMsPrime:
         T_near_east = 800
         T_europe = 500
         T_basal = 1500
+
         # Populations: 0=modern/neolithic_farmers/B,1=steppe/CHG,2=WHG/A, 3=EHG
         population_configurations = [
             msprime.PopulationConfiguration(initial_size=N_modern),

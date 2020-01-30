@@ -26,18 +26,18 @@ class RunMsWithFsOutput:
 
         # args for script
         parser = argparse.ArgumentParser()
-        parser.add_argument("-out",
+        parser.add_argument("-out_ts",
                             help="Path and filename to save the tree sequence to e.g. Documents/msprimetest NB directory must already exist",
                             required=True)
-        parser.add_argument("-path",
+        parser.add_argument("-path_fs",
                             help="Path to save FINESTRUCTURE input files to e.g. Documents/msprime2fstest",
                             required=True)
         parser.add_argument("-seed",
                             help="If this is None, automatically generated",
                             required=False)
         args = parser.parse_args()
-        tree_sequence.dump(path="/Users/williambarrie/" + args.out)
-        path = ("/Users/williambarrie/" + args.path)
+        tree_sequence.dump(path=args.out_ts)
+        path = args.path_fs
         if not os.path.exists(path):
             os.makedirs(path)
 
@@ -55,26 +55,18 @@ class RunMsWithFsOutput:
                 file.write(indnames[i] + " " + indpopnames[i] + " 1\n")
 
         # phase_file
-        list_of_inds = []
-        for sample in tree_sequence.samples():
-            list_of_inds.append(sample)
+        list_of_inds = [sample for sample in tree_sequence.samples()]
         number_of_inds = len(list_of_inds)
-
-        listofsites = []
-        for site in tree_sequence.sites():
-            listofsites.append(math.floor(site.position))
+        listofsites = [math.floor(site.position) for site in tree_sequence.sites()]
         numsnps = len(listofsites)
-
         # Ensure all site positions are unique
         while len(listofsites) != len(set(listofsites)):
             for i in range(1, len(listofsites)):
                 if listofsites[i] <= listofsites[i - 1]:
                     listofsites[i] = (listofsites[i - 1] + 1)
-
         # Test if all site positions are unique, otherwise error message
         if len(listofsites) != len(set(listofsites)):
             print("Error: some SNPs have same location - need to edit")
-
         with open(os.path.join(path, "phasefile"), "w") as file:
             file.write(str(number_of_inds) + "\n")
             file.write(str(numsnps) + "\n")

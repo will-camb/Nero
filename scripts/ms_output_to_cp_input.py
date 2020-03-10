@@ -38,7 +38,7 @@ class RunMsWithCpOutput:
                             required=False)
         args = parser.parse_args()
         tree_sequence.dump(path=args.out_ms)
-        path = args.path_fs
+        path = args.path_cp
         if not os.path.exists(path):
             os.makedirs(path)
 
@@ -69,8 +69,8 @@ class RunMsWithCpOutput:
         if len(listofsites) != len(set(listofsites)):
             print("Error: some SNPs have same location - need to edit")
         with open(os.path.join(path, "phasefile"), "w") as file:
-            file.write(str(number_of_inds - self.number_recipient_haps) + "/n")
-            file.write(str(number_of_inds/2) + "\n")
+            file.write(str(number_of_inds - self.number_recipient_haps) + "\n")
+            file.write(str(int(number_of_inds/2)) + "\n")
             file.write(str(numsnps) + "\n")
             file.write("P")
             for site in listofsites:

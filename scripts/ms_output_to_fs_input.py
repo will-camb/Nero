@@ -1,7 +1,7 @@
 import os
 import argparse
 import math
-from run_ms_prime import RunMsPrime
+from scripts.run_ms_prime import RunMsPrime
 
 
 class RunMsWithFsOutput:

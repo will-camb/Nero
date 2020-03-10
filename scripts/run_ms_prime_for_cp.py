@@ -5,7 +5,7 @@ class RunMsPrime:
 
     def __init__(self, nhaps=[20, 20, 10, 10, 10], sample_times=[200, 180, 200, 200, 0], hg_mig_rate=2.5e-5,
                  length=198295000, recombination_rate=1e-8, mutation_rate=1.25e-8,
-                 popnames=["neolithic", "steppe", "WHG", "EHG", "modern"], populations=[0, 1, 2, 3, 0]):
+                 popnames=["neolithic", "steppe", "WHG", "EHG", "modern"], populations=[0, 1, 2, 3, 0], number_recipient_haps=0):
         self.nhaps = nhaps
         self.sample_times = sample_times
         self.hg_mig_rate = hg_mig_rate
@@ -14,6 +14,7 @@ class RunMsPrime:
         self.mutation_rate = mutation_rate
         self.popnames = popnames
         self.populations = populations
+        self.number_recipient_haps=number_recipient_haps
 
     def run_model(self):
         # initial population sizes:

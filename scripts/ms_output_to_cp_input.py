@@ -8,7 +8,7 @@ class RunMsWithCpOutput:
 
     def __init__(self, nhaps=[10, 20, 20, 10, 10], sample_times=[0, 200, 180, 200, 200], hg_mig_rate=2.5e-5,
                  length=198295000, recombination_rate=1e-8, mutation_rate=1.25e-8,
-                 popnames=["modern", "neolithic", "steppe", "WHG", "EHG"], populations=[0, 0, 1, 2, 3]):
+                 popnames=["modern", "neolithic", "steppe", "WHG", "EHG"], populations=[0, 0, 1, 2, 3], number_recipient_haps=0):
         self.nhaps = nhaps
         self.sample_times = sample_times
         self.hg_mig_rate = hg_mig_rate
@@ -17,12 +17,13 @@ class RunMsWithCpOutput:
         self.mutation_rate = mutation_rate
         self.popnames = popnames
         self.populations = populations
+        self.number_recipient_haps=number_recipient_haps
 
     def run(self):
         #run simulation
         tree_sequence = RunMsPrime(nhaps=self.nhaps, sample_times=self.sample_times, hg_mig_rate=self.hg_mig_rate,
                  length=self.length, recombination_rate=self.recombination_rate, mutation_rate=self.mutation_rate,
-                 popnames=self.popnames, populations=self.populations).run_model()
+                 popnames=self.popnames, populations=self.populations, number_recipient_haps=self.number_recipient_haps).run_model()
 
         # args for script
         parser = argparse.ArgumentParser()
@@ -68,12 +69,14 @@ class RunMsWithCpOutput:
         if len(listofsites) != len(set(listofsites)):
             print("Error: some SNPs have same location - need to edit")
         with open(os.path.join(path, "phasefile"), "w") as file:
-            file.write(str(number_of_inds) + "\n")
+            file.write(str(number_of_inds - self.number_recipient_haps) + "/n")
+            file.write(str(number_of_inds/2) + "\n")
             file.write(str(numsnps) + "\n")
             file.write("P")
             for site in listofsites:
                 file.write(" " + str(site))
             file.write("\n")
+            file.write("SSSSSSSSSSSS" + "/n")
             for hap in tree_sequence.haplotypes():
                 file.write(str(hap) + "\n")
 

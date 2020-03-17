@@ -8,7 +8,7 @@ class RunMsWithCpOutput:
 
     def __init__(self, nhaps=[10, 20, 20, 10, 10], sample_times=[0, 200, 180, 200, 200], hg_mig_rate=2.5e-5,
                  length=198295000, recombination_rate=1e-8, mutation_rate=1.25e-8,
-                 popnames=["modern", "neolithic", "steppe", "WHG", "EHG"], populations=[0, 0, 1, 2, 3], number_recipient_haps=0):
+                 popnames=["neolithic", "steppe", "WHG", "EHG", "modern"], populations=[0, 1, 2, 3, 0], number_recipient_haps=0):
         self.nhaps = nhaps
         self.sample_times = sample_times
         self.hg_mig_rate = hg_mig_rate
@@ -76,7 +76,6 @@ class RunMsWithCpOutput:
             for site in listofsites:
                 file.write(" " + str(site))
             file.write("\n")
-            file.write("SSSSSSSSSSSS" + "/n")
             for hap in tree_sequence.haplotypes():
                 file.write(str(hap) + "\n")
 

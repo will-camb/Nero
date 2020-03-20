@@ -1,7 +1,7 @@
 import os
 import argparse
 import math
-from run_ms_prime_for_cp import RunMsPrime
+from scripts.run_ms_prime_v2_for_cp import RunMsPrime
 
 
 class RunMsWithCpOutput:
@@ -10,7 +10,7 @@ class RunMsWithCpOutput:
                  sample_times=[149, 150, 200, 175, 300, 275, 251, 250, 0],
                  hg_mig_rate=2e-3, length=198295559, recombination_rate=1e-8, mutation_rate=1.25e-8,
                  popnames=["bronze", "baa", "neolithic", "yam", "WHG", "EHG", "ana", "CHG", "modern"],
-                 populations=[0, 4, 0, 1, 2, 3, 0, 1, 0], number_recipient_haps=0
+                 populations=[0, 4, 0, 1, 2, 3, 0, 1, 0], number_recipient_haps=2
                  ):
         self.nhaps = nhaps
         self.sample_times = sample_times

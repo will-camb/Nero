@@ -6,9 +6,12 @@ from run_ms_prime_for_cp import RunMsPrime
 
 class RunMsWithCpOutput:
 
-    def __init__(self, nhaps=[10, 20, 20, 10, 10], sample_times=[0, 200, 180, 200, 200], hg_mig_rate=2.5e-5,
-                 length=198295000, recombination_rate=1e-8, mutation_rate=1.25e-8,
-                 popnames=["neolithic", "steppe", "WHG", "EHG", "modern"], populations=[0, 1, 2, 3, 0], number_recipient_haps=0):
+    def __init__(self, nhaps=[102, 12, 162, 14, 86, 74, 20, 24, 2],
+                 sample_times=[149, 150, 200, 175, 300, 275, 251, 250, 0],
+                 hg_mig_rate=2e-3, length=198295559, recombination_rate=1e-8, mutation_rate=1.25e-8,
+                 popnames=["bronze", "baa", "neolithic", "yam", "WHG", "EHG", "ana", "CHG", "modern"],
+                 populations=[0, 4, 0, 1, 2, 3, 0, 1, 0], number_recipient_haps=0
+                 ):
         self.nhaps = nhaps
         self.sample_times = sample_times
         self.hg_mig_rate = hg_mig_rate
@@ -17,7 +20,7 @@ class RunMsWithCpOutput:
         self.mutation_rate = mutation_rate
         self.popnames = popnames
         self.populations = populations
-        self.number_recipient_haps=number_recipient_haps
+        self.number_recipient_haps = number_recipient_haps
 
     def run(self):
         #run simulation

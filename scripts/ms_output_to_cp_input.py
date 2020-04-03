@@ -6,11 +6,11 @@ from scripts.run_ms_prime_v3_for_cp import RunMsPrime
 
 class RunMsWithCpOutput:
 
-    def __init__(self, nhaps=[102, 12, 162, 14, 86, 74, 20, 24, 2],
-                 sample_times=[149, 150, 200, 175, 300, 275, 251, 250, 0],
+    def __init__(self, nhaps=[200, 102, 12, 162, 14, 86, 74, 20, 24],
+                 sample_times=[0, 149, 150, 200, 175, 300, 275, 251, 250],
                  hg_mig_rate=2e-3, length=198295559, recombination_rate=1e-8, mutation_rate=1.25e-8,
-                 popnames=["bronze", "baa", "neolithic", "yam", "WHG", "EHG", "ana", "CHG", "modern"],
-                 populations=[0, 4, 0, 1, 2, 3, 0, 1, 0], number_recipient_haps=2
+                 popnames=["modern", "bronze", "baa", "neolithic", "yam", "WHG", "EHG", "ana", "CHG"],
+                 populations=[0, 0, 4, 0, 1, 2, 3, 0, 1], number_recipient_haps=2
                  ):
         self.nhaps = nhaps
         self.sample_times = sample_times

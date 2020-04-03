@@ -1,7 +1,7 @@
 import os
 import argparse
 import math
-from scripts.run_ms_prime_v2_for_cp import RunMsPrime
+from scripts.run_ms_prime_v3_for_cp import RunMsPrime
 
 
 class RunMsWithCpOutput:

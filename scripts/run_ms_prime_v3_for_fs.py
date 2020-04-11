@@ -22,7 +22,7 @@ class RunMsPrime:
 
     def run_model(self):
         # Load recomb map
-        infile = "/willerslev/datasets/hapmapRecomb/2011-01_phaseII_B37/genetic_map_GRCh37_chr1.txt"
+        infile = "/willerslev/datasets/hapmapRecomb/2011-01_phaseII_B37/genetic_map_GRCh37_chr3.txt"
         recomb_map = msprime.RecombinationMap.read_hapmap(infile)
 
         # initial population sizes:

@@ -1,6 +1,7 @@
 #!/bin/bash
 ## Copyright William Barrie, 2020
 ## All rights reserved 
+## Example usage 'bash vcf_to_cp.sh mesoneo 3 22'
 
 if [ "$#" -ne "3" ] ; then
     echo "Usage: vcf_to_cp.sh <dir> <firstchr> <lastchr>"

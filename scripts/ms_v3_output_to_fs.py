@@ -8,15 +8,14 @@ class RunMsWithFsOutput:
 
     def __init__(self, nhaps=[200, 102, 12, 162, 14, 86, 74, 20, 24],
                  sample_times=[0, 149, 150, 200, 175, 300, 275, 251, 250],
-                 hg_mig_rate=2e-3, length=198295559, recombination_rate=1e-8, mutation_rate=1.25e-8,
+                 hg_mig_rate=2e-3, length=198295559, mutation_rate=1.25e-8,
                  popnames=["modern", "bronze", "baa", "neolithic", "yam", "WHG", "EHG", "ana", "CHG"],
-                 populations=[0, 0, 4, 0, 1, 2, 3, 0, 1]
+                 populations=[0, 0, 4, 0, 1, 2, 3, 0, 1], infile = "/willerslev/datasets/hapmapRecomb/2011-01_phaseII_B37/genetic_map_GRCh37_chr3.txt"
                  ):
         self.nhaps = nhaps
         self.sample_times = sample_times
         self.hg_mig_rate = hg_mig_rate
         self.length = length
-        self.recombination_rate = recombination_rate
         self.mutation_rate = mutation_rate
         self.popnames = popnames
         self.populations = populations
@@ -24,7 +23,7 @@ class RunMsWithFsOutput:
     def run(self):
         #run simulation
         tree_sequence = RunMsPrime(nhaps=self.nhaps, sample_times=self.sample_times, hg_mig_rate=self.hg_mig_rate,
-                 length=self.length, recombination_rate=self.recombination_rate, mutation_rate=self.mutation_rate,
+                 length=self.length, mutation_rate=self.mutation_rate,
                  popnames=self.popnames, populations=self.populations).run_model()
 
         # args for script
@@ -81,6 +80,10 @@ class RunMsWithFsOutput:
                 file.write(str(hap) + "\n")
 
         # recomb_file
+        # Load recomb map
+        infile = "/willerslev/datasets/hapmapRecomb/2011-01_phaseII_B37/genetic_map_GRCh37_chr3.txt"
+        recomb_map = msprime.RecombinationMap.read_hapmap(infile)
+
         with open(os.path.join(path, "recombfile"), "w") as file:
             file.write("start.pos " + "recom.rate.perbp" + "\n")
             for site in listofsites:

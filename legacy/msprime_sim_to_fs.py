@@ -1,4 +1,4 @@
-# This file should not be used - for records only. Instead use run_ms_prime.py and ms_output_to_fs_input.py
+# This file should not be used - for records only. Instead use run_ms_prime.py and ms_v2_output_to_fs.py
 import math
 import argparse
 import msprime

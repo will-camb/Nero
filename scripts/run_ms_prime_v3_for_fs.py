@@ -7,7 +7,7 @@ class RunMsPrime:
 
     def __init__(self, nhaps=[2, 102, 12, 162, 14, 86, 74, 20, 24],
                  sample_times=[0, 149, 150, 200, 175, 300, 275, 251, 250],
-                 hg_mig_rate=2e-3, length=198295559, recombination_rate=1e-8, mutation_rate=1.25e-8,
+                 hg_mig_rate=2e-3, length=198295559, mutation_rate=1.25e-8,
                  popnames=["modern", "bronze", "baa", "neolithic", "yam", "WHG", "EHG", "ana", "CHG"],
                  populations=[0, 0, 4, 0, 1, 2, 3, 0, 1]
                  ):
@@ -15,7 +15,6 @@ class RunMsPrime:
         self.sample_times = sample_times
         self.hg_mig_rate = hg_mig_rate
         self.length = length
-        self.recombination_rate = recombination_rate
         self.mutation_rate = mutation_rate
         self.popnames = popnames
         self.populations = populations

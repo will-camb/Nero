@@ -1,7 +1,6 @@
-from ms_output_to_cp_input import RunMsWithCpOutput
-from ms_output_to_fs_input import RunMsWithFsOutput
+# from ms_v2_output_to_fs import RunMsWithFsOutput
+# from ms_v3_output_to_fs import RunMsWithFsOutput
 
-model = RunMsWithCpOutput()
-model = RunMsWithFsOutput()
+# model = RunMsWithFsOutput()
 
 model.run()

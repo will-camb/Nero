@@ -9,7 +9,8 @@ class RunMsPrime:
                  sample_times=[0, 149, 150, 200, 175, 300, 275, 251, 250],
                  hg_mig_rate=2e-3, length=198295559, mutation_rate=1.25e-8,
                  popnames=["modern", "bronze", "baa", "neolithic", "yam", "WHG", "EHG", "ana", "CHG"],
-                 populations=[0, 0, 4, 0, 1, 2, 3, 0, 1]
+                 populations=[0, 0, 4, 0, 1, 2, 3, 0, 1],
+                 infile="/willerslev/datasets/hapmapRecomb/2011-01_phaseII_B37/genetic_map_GRCh37_chr3.txt"
                  ):
         self.nhaps = nhaps
         self.sample_times = sample_times
@@ -18,11 +19,11 @@ class RunMsPrime:
         self.mutation_rate = mutation_rate
         self.popnames = popnames
         self.populations = populations
+        self.infile = infile
 
     def run_model(self):
         # Load recomb map
-        infile = "/willerslev/datasets/hapmapRecomb/2011-01_phaseII_B37/genetic_map_GRCh37_chr3.txt"
-        recomb_map = msprime.RecombinationMap.read_hapmap(infile)
+        recomb_map = msprime.RecombinationMap.read_hapmap(self.infile)
 
         # initial population sizes:
         N_bronze = 50000

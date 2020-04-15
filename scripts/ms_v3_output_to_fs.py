@@ -10,7 +10,8 @@ class RunMsWithFsOutput:
                  sample_times=[0, 149, 150, 200, 175, 300, 275, 251, 250],
                  hg_mig_rate=2e-3, length=198295559, mutation_rate=1.25e-8,
                  popnames=["modern", "bronze", "baa", "neolithic", "yam", "WHG", "EHG", "ana", "CHG"],
-                 populations=[0, 0, 4, 0, 1, 2, 3, 0, 1], infile = "/willerslev/datasets/hapmapRecomb/2011-01_phaseII_B37/genetic_map_GRCh37_chr3.txt"
+                 populations=[0, 0, 4, 0, 1, 2, 3, 0, 1],
+                 infile="/willerslev/datasets/hapmapRecomb/2011-01_phaseII_B37/genetic_map_GRCh37_chr3.txt"
                  ):
         self.nhaps = nhaps
         self.sample_times = sample_times
@@ -19,12 +20,13 @@ class RunMsWithFsOutput:
         self.mutation_rate = mutation_rate
         self.popnames = popnames
         self.populations = populations
+        self.infile = infile
 
     def run(self):
         #run simulation
         tree_sequence = RunMsPrime(nhaps=self.nhaps, sample_times=self.sample_times, hg_mig_rate=self.hg_mig_rate,
                  length=self.length, mutation_rate=self.mutation_rate,
-                 popnames=self.popnames, populations=self.populations).run_model()
+                 popnames=self.popnames, populations=self.populations, infile=self.infile).run_model()
 
         # args for script
         parser = argparse.ArgumentParser()
@@ -32,7 +34,7 @@ class RunMsWithFsOutput:
                             help="Path and filename to save the tree sequence to e.g. Documents/msprimetest NB directory must already exist",
                             required=True)
         parser.add_argument("-path_fs",
-                            help="Path to save FINESTRUCTURE input files to e.g. Documents/msprime2fstest",
+                            help="Path to save FINESTRUCTURE input files (phasefile and pop_ids) to e.g. Documents/msprime2fstest",
                             required=True)
         parser.add_argument("-seed",
                             help="If this is None, automatically generated",
@@ -80,11 +82,9 @@ class RunMsWithFsOutput:
                 file.write(str(hap) + "\n")
 
         # recomb_file
-        # Load recomb map
-        infile = "/willerslev/datasets/hapmapRecomb/2011-01_phaseII_B37/genetic_map_GRCh37_chr3.txt"
-        recomb_map = msprime.RecombinationMap.read_hapmap(infile)
-
-        with open(os.path.join(path, "recombfile"), "w") as file:
-            file.write("start.pos " + "recom.rate.perbp" + "\n")
-            for site in listofsites:
-                file.write(str(site) + " " + "1e-7" + "\n")
+        print(
+            "Need to run command to create cp input recomb file using recombination map used for msprime simulation. Something like..."
+            "< willerslev/software/fs_4.0.1/convertrecfile.pl -M hapmap -U cM/MB path/phasefile /willerslev/datasets/hapmapRecomb/2011-01_phaseII_B37/genetic_map_GRCh37_chr${chr}.txt path/recombfile >"
+            
+            "The recombination map used for the msprime model was" + self.infile
+        )

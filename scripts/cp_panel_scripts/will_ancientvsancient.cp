@@ -1,0 +1,7 @@
+phasefiles:ref_panel/ref_panel_phasefile
+recombfiles:ref_panel/ref_panel_recombfile
+popidfile:ref_panel/ref_panel_pop_ids
+donoridfile:will_ancientvsancient.donors
+refdonorfile:
+Neinf:38.5563
+popmuinf:0.0007161

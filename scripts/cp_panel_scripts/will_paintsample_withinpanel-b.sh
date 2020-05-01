@@ -121,21 +121,33 @@ if [ "$mode" == "full" ] || [ "$mode" == "repaint" ] ;then
 	refpanelphase=`grep ^phasefiles $refdatacp | grep -o '^[^#]*' | cut -f2 -d: | cut -f$chr -d','`
 	refpanelrecomb=`grep ^recombfiles $refdatacp | grep -o '^[^#]*' | cut -f2 -d: | cut -f$chr -d','`
 ## Extract data
+
+#################################################################
+	echo "Making initial all_copyprobsperlocus.out at $dir to add each copyprobsperlocus.out to as they're created"
+	python make_all_copyprobsperlocus.out.py -phasefile refpanelphase -chr $chr -o $dir
+
+
 	myecho "ReferencePhase: $refpanelphase ReferenceRec: $refpanelrecomb IndNum: $indnum"
-	cmd="fs cp -b -n $refpanelne -M $refpanelmu -g $refpanelphase -r $refpanelrecomb -f $refpaneldonor $indnum $indnum -t $dir/$refpanelname/rerun.chr$chr.ids -o $dir/$refpanelname/cp/rerun.chr$chr -s 0"
+
+
+	cmd="fs cp -b -n $refpanelne -M $refpanelmu -g $refpanelphase -r $refpanelrecomb -f $refpaneldonor $indnum $indnum -t $dir/$refpanelname/rerun.chr$chr.ids -o $dir/$refpanelname/cp/rerun.chr$chr -s 0 &&
+	python modify_copyprobsperlocus.out.py -copyprobsperlocus_location $dir/$refpanelname/cp/rerun.chr$chr.copyprobsperlocus.out.gz &&
+	cat $dir/$refpanelname/cp/rerun.chr$chr.copyprobsperlocus.out.gz >> $dir/$chr_all_copyprobsperlocus.txt"
+	
+#################################################################
 	echo "Reprocessing Chr $chr"
 	myecho $cmd
 	$cmd
     done
 fi
 
-#if [ "$nchromosomes" == "1" ] ;then
+if [ "$nchromosomes" == "1" ] ;then
     fs combine -o $dir/$refpanelname/$name $dir/$refpanelname/cp/$output.chr1
-#else
-#    fcmd=`eval echo $dir/$refpanelname/cp/$output.chr{1..$nchromosomes}.chunkcounts.out`
-#    files=`ls $fcmd`
-#    fs combine -o $dir/$refpanelname/$name $files
-#fi
+else
+    fcmd=`eval echo $dir/$refpanelname/cp/$output.chr{1..$nchromosomes}.chunkcounts.out`
+    files=`ls $fcmd`
+    fs combine -o $dir/$refpanelname/$name $files
+fi
 
 ## This is how we'd tidy up locally. We keep everything and tidy up later.
 #rm -r $dir/$refpanelname/cp/

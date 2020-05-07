@@ -1,29 +1,21 @@
 import pandas as pd 
-import argparse 
+import argparse
+import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-copyprobsperlocus_location",
                     help="location of individual copyprobsperlocus.out output from painting",
                     required=True)
 args = parser.parse_args()
-
-print('This is your specified location for copyprobsperlocus.out: ' + args.copyprobsperlocus_location)
-
 copyprobsDF = pd.read_csv(args.copyprobsperlocus_location, delim_whitespace=True)
-
-#Add haplotype and individual ID column
 Hap_start_sites = copyprobsDF.loc[copyprobsDF.pos == 'HAP'].index.tolist()
-copyprobsDF['ID'] = ''
-copyprobsDF.iloc[:Hap_start_sites[1]].ID = str(copyprobsDF.iloc[Hap_start_sites[0]][0]) + '_' + str(copyprobsDF.iloc[Hap_start_sites[0]][1]) + '_' + str(copyprobsDF.iloc[Hap_start_sites[0]][2])
-copyprobsDF.iloc[Hap_start_sites[1]:].ID = str(copyprobsDF.iloc[Hap_start_sites[1]][0]) + '_' + str(copyprobsDF.iloc[Hap_start_sites[1]][1])+ '_' + str(copyprobsDF.iloc[Hap_start_sites[1]][2])
-
-#Eliminate rows containing Hap number
-rowstoignore = list(copyprobsDF[copyprobsDF['pos'].str.contains("HAP") == True].index)
-introws = list()
-for i in list(copyprobsDF.index):
-    if i not in rowstoignore:
-        introws.append(i)
-copyprobs_modDF = copyprobsDF.iloc[introws]
-
-#Save output
+copyprobsDF.drop('pos', axis=1, inplace=True)
+bins = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+names = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+d = dict(enumerate(names, 1))
+mask = ~copyprobsDF.index.isin(Hap_start_sites)
+copyprobsDF_valid = copyprobsDF[mask]
+cols = copyprobsDF.columns.tolist()
+for n, i in enumerate(cols):
+    copyprobsDF.loc[mask, cols[n]] = np.vectorize(d.get)(np.digitize(copyprobsDF_valid[cols[n]].astype('float64'), bins))
 copyprobsDF.to_csv(args.copyprobsperlocus_location + '_modified')

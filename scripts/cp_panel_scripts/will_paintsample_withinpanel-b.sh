@@ -122,17 +122,16 @@ if [ "$mode" == "full" ] || [ "$mode" == "repaint" ] ;then
 	refpanelrecomb=`grep ^recombfiles $refdatacp | grep -o '^[^#]*' | cut -f2 -d: | cut -f$chr -d','`
 ## Extract data
 	echo "Making initial all_copyprobsperlocus.out at $3 to add each copyprobsperlocus.out to as they're created"
-	python make_all_copyprobsperlocus.out.py -chr $chr -o $3
+  python make_all_copyprobsperlocus.out.py -chr $chr -o $3
 	myecho "ReferencePhase: $refpanelphase ReferenceRec: $refpanelrecomb IndNum: $indnum"
 	cmd="fs cp -b -n $refpanelne -M $refpanelmu -g $refpanelphase -r $refpanelrecomb -f $refpaneldonor $indnum $indnum -t $dir/$refpanelname/rerun.chr$chr.ids -o $dir/$refpanelname/cp/rerun.chr$chr -s 0"
 	echo "Reprocessing Chr $chr"
 	myecho $cmd
 	$cmd
 	gunzip $dir/$refpanelname/cp/rerun.chr$chr.copyprobsperlocus.out.gz
-#	python modify_copyprobsperlocus.out.py -copyprobsperlocus_location $dir/$refpanelname/cp/rerun.chr$chr.copyprobsperlocus.out
-	cat $dir/$refpanelname/cp/rerun.chr$chr.copyprobsperlocus.out >> $3/$chr.all_copyprobsperlocus.txt
-	gzip $3/$chr.all_copyprobsperlocus.txt
-	#rm -r $dir/$refpanelname/cp/
+  python modify_copyprobsperlocus.out.py -copyprobsperlocus_location $dir/$refpanelname/cp/rerun.chr$chr.copyprobsperlocus.out
+	cat $dir/$refpanelname/cp/rerun.chr$chr.copyprobsperlocus.out_modified >> $3/$chr.all_copyprobsperlocus.txt
+#	gzip $3/$chr.all_copyprobsperlocus.txt
     done
 fi
 
@@ -144,5 +143,5 @@ else
     fs combine -o $dir/$refpanelname/$name $files
 fi
 
-## This is how we'd tidy up locally. We keep everything and tidy up later.
-#rm -r $dir/$refpanelname/cp/
+## Tidy up the temporary files
+rm -r $dir/$refpanelname/cp/

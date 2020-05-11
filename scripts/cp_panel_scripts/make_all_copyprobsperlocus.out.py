@@ -13,4 +13,4 @@ args = parser.parse_args()
 file_name = args.chr + '.all_copyprobsperlocus.txt'
 if not os.path.isfile(os.path.join(args.o, file_name)):
     all_copyprobsperlocusDF = pd.DataFrame(columns=['1', '2', '3', '4'])
-    all_copyprobsperlocusDF.to_csv(os.path.join(args.o, file_name), sep=' ', index_label='pos')
+    all_copyprobsperlocusDF.to_csv(os.path.join(args.o, file_name), sep=' ', index=False)

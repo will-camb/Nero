@@ -130,7 +130,8 @@ if [ "$mode" == "full" ] || [ "$mode" == "repaint" ] ;then
 	$cmd
 	gunzip $dir/$refpanelname/cp/rerun.chr$chr.copyprobsperlocus.out.gz
   python modify_copyprobsperlocus.out.py -copyprobsperlocus_location $dir/$refpanelname/cp/rerun.chr$chr.copyprobsperlocus.out
-	cat $dir/$refpanelname/cp/rerun.chr$chr.copyprobsperlocus.out_modified >> $3/$chr.all_copyprobsperlocus.txt
+  cat $dir/$refpanelname/cp/rerun.chr$chr.copyprobsperlocus.out_modified | sed 's/ //g' > $dir/$refpanelname/cp/rerun.chr$chr.copyprobsperlocus.out_modified2
+	cat $dir/$refpanelname/cp/rerun.chr$chr.copyprobsperlocus.out_modified2 >> $3/$chr.all_copyprobsperlocus.txt
 #	gzip $3/$chr.all_copyprobsperlocus.txt
     done
 fi

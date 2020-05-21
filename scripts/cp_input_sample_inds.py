@@ -27,7 +27,7 @@ df2=df[df[1]!='keep']
 
 #Make new idfile
 with open(os.path.join(path, "pop_ids_subsampled"), "w") as file:
-    for index, row in subsample_idfile.iterrows():
+    for index, row in df[df[1]=='keep'].iterrows():
         file.write(str(row[0]) + " " + str(row[0]) + " 1\n")
 
 # list of index value (in pop_ids) of individuals to remove

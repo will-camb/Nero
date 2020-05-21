@@ -16,8 +16,7 @@ verbose=TRUE
 vcfdir="/willerslev/scratch/neo/impute_20200221/03022020"
 genmapdir="/willerslev/datasets/hapmapRecomb/2011-01_phaseII_B37"
 dir="$1"
-# chrlist=`seq $2 $3`
-chrlist=`seq $2 $3` #This needs fixing to be specified by input parameters
+chrlist=`seq $2 $3`
 plink=/willerslev/software/plink1.9/plink
 plink2chromopainter=/willerslev/software/fs_4.0.1/plink2chromopainter.pl
 convertrecfile=/willerslev/software/fs_4.0.1/convertrecfile.pl
@@ -50,7 +49,7 @@ for chr in $chrlist; do
 echo "Processing chromosome $chr"
 $plink2chromopainter -p $dir/plinkformat/processed.chr${chr}.ped -m $dir/plinkformat/processed.chr${chr}.map -o $dir/cpinput/phasefile.chr$chr
 done
-"Done converting plink to cp input for all chromosomes!"
+echo "Done converting plink to cp input for all chromosomes!"
 
 ## Make cp recombfile using human recombination map 
 echo "Making recomb file using provided genetic maps in directory $genmapdir"

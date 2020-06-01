@@ -71,7 +71,7 @@ if [ `cat $dir/testfileresults.txt | wc -l` -gt 0 ] ; then
 	    myecho "Using name $refname for name $name"
 	fi
         echo "Test case $mode"
-        echo bash will_paintsample_withinpanel.sh $mode $name $dir $refcp $refname >> $cmdlist
+        echo bash will_paintsample_withinpanel-b.sh $mode $name $dir $refcp $refname >> $cmdlist
     done < $dir/idstoprocess.txt
     numruns=`cat $cmdlist | wc -l`
     echo "$numruns Runs required. Run with:"

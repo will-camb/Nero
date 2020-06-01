@@ -7,7 +7,7 @@
 set -e
 echo "Found $# arguments"
 if [ "$#" -lt "4" ] ; then
-    echo "Usage: will_paintsample_withinpanel.sh <full/repaint> <name> <dir> <refdata.cp> <optional: removename>"
+    echo "Usage: will_paintsample_withinpanel-b.sh <full/repaint> <name> <dir> <refdata.cp> <optional: removename>"
     echo "<full/repaint>: whether we paint and repaint with a prior, or do a single painting"
     echo "<name>: The sample name to be processed"
     echo "<dir>: The root location of the output, which will be placed in <dir>/painting/<name>"
@@ -122,7 +122,7 @@ if [ "$mode" == "full" ] || [ "$mode" == "repaint" ] ;then
 	refpanelrecomb=`grep ^recombfiles $refdatacp | grep -o '^[^#]*' | cut -f2 -d: | cut -f$chr -d','`
 ## Extract data
 	echo "Making initial all_copyprobsperlocus.out at $3 to add each copyprobsperlocus.out to as they're created"
-  python make_all_copyprobsperlocus.out.py -chr $chr -o $3
+  python make_all_copyprobsperlocus.out.py -chr $chr -phasefile $refpanelphase -o $3
 	myecho "ReferencePhase: $refpanelphase ReferenceRec: $refpanelrecomb IndNum: $indnum"
 	cmd="fs cp -b -n $refpanelne -M $refpanelmu -g $refpanelphase -r $refpanelrecomb -f $refpaneldonor $indnum $indnum -t $dir/$refpanelname/rerun.chr$chr.ids -o $dir/$refpanelname/cp/rerun.chr$chr -s 0"
 	echo "Reprocessing Chr $chr"
@@ -145,4 +145,4 @@ else
 fi
 
 ## Tidy up the temporary files
-rm -r $dir/$refpanelname/cp/
+# rm -r $dir/$refpanelname/cp/

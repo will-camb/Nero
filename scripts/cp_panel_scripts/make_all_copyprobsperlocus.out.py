@@ -16,5 +16,5 @@ args = parser.parse_args()
 file_name = args.chr + '.all_copyprobsperlocus.txt'
 if not os.path.isfile(os.path.join(args.o, file_name)):
     all_copyprobsperlocusDF = pd.DataFrame(columns=['1234'])
-    all_copyprobsperlocusDF = all_copyprobsperlocusDF.append(pd.read_csv(args.phasefile, nrows=2, header=None).iloc[1])
+    all_copyprobsperlocusDF['1234'] = pd.read_csv(args.phasefile, nrows=2, header=None).iloc[1]
     all_copyprobsperlocusDF.to_csv(os.path.join(args.o, file_name), sep=' ', index=False)

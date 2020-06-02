@@ -18,4 +18,6 @@ copyprobsDF_valid = copyprobsDF[mask]
 cols = copyprobsDF.columns.tolist()
 for n, i in enumerate(cols):
     copyprobsDF.loc[mask, cols[n]] = np.vectorize(d.get)(np.digitize(copyprobsDF_valid[cols[n]].astype('float64'), bins))
-copyprobsDF.to_csv(args.copyprobsperlocus_location + '_modified', index=False, sep=" ")
+# copyprobsDF.to_csv(args.copyprobsperlocus_location + '_modified', index=False, sep=" ")
+copyprobsDF = copyprobsDF.iloc[1:]
+copyprobsDF.to_csv(args.copyprobsperlocus_location, index=False, sep=" ")

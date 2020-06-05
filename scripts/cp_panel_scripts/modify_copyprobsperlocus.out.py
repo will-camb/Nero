@@ -18,4 +18,7 @@ copyprobsDF_valid = copyprobsDF[mask]
 cols = copyprobsDF.columns.tolist()
 for n, i in enumerate(cols):
     copyprobsDF.loc[mask, cols[n]] = np.vectorize(d.get)(np.digitize(copyprobsDF_valid[cols[n]].astype('float64'), bins))
-copyprobsDF.to_csv(args.copyprobsperlocus_location, index=False, header=False, sep=" ")
+copyprobsDF.iloc[Hap_start_sites[0]] = str(int(copyprobsDF.iloc[Hap_start_sites[0]][0])) + "_" + copyprobsDF.iloc[Hap_start_sites[0]][1] + "_"
+copyprobsDF.iloc[Hap_start_sites[1]] = str(int(copyprobsDF.iloc[Hap_start_sites[1]][0])) + "_" + copyprobsDF.iloc[Hap_start_sites[1]][1] + "_"
+transposed_copyprobsDF = copyprobsDF.iloc[0:Hap_start_sites[1]].T.append(copyprobsDF.iloc[Hap_start_sites[1]:].reset_index(drop=True).T)
+transposed_copyprobsDF.to_csv(args.copyprobsperlocus_location, index=False, header=False, sep=" ")

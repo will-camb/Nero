@@ -128,10 +128,11 @@ if [ "$mode" == "full" ] || [ "$mode" == "repaint" ] ;then
 	echo "Reprocessing Chr $chr"
 	myecho $cmd
 	$cmd
-  python modify_copyprobsperlocus.out.py -copyprobsperlocus_location $dir/$refpanelname/cp/rerun.chr$chr.copyprobsperlocus.out.gz
-  cat $dir/$refpanelname/cp/rerun.chr$chr.copyprobsperlocus.out.gz | sed 's/ //g' > $dir/$refpanelname/cp/rerun.chr$chr.copyprobsperlocus.out_modified
+	gunzip $dir/$refpanelname/cp/rerun.chr$chr.copyprobsperlocus.out.gz
+  python modify_copyprobsperlocus.out.py -copyprobsperlocus_location $dir/$refpanelname/cp/rerun.chr$chr.copyprobsperlocus.out
+  cat $dir/$refpanelname/cp/rerun.chr$chr.copyprobsperlocus.out | sed 's/ //g' > $dir/$refpanelname/cp/rerun.chr$chr.copyprobsperlocus.out_modified
 	cat $dir/$refpanelname/cp/rerun.chr$chr.copyprobsperlocus.out_modified >> $3/$chr.all_copyprobsperlocus.txt
-	rm -r $dir/$refpanelname/cp/rerun.chr$chr.copyprobsperlocus.out.gz $dir/$refpanelname/cp/rerun.chr$chr.copyprobsperlocus.out_modified
+	rm -r $dir/$refpanelname/cp/rerun.chr$chr.copyprobsperlocus.out $dir/$refpanelname/cp/rerun.chr$chr.copyprobsperlocus.out_modified
     done
 fi
 

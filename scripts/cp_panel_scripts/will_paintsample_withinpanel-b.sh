@@ -110,7 +110,7 @@ if [ "$mode" == "full" ] || [ "$mode" == "repaint" ] ;then
     for chr in $chrlist ; do
 	outdat="$dir/$refpanelname/complete.chr$chr.phase"
 	echo "Processing Chr $chr"
-	Rscript makeIds.R -k "$refpanelids" "$dir/$refpanelname/rerun.chr$chr.ids" "$removename"
+	Rscript makeIds.R -k $refpanelids $dir/$refpanelname/rerun.chr$chr.ids $removename
 	Rscript orderRecipientsByDonorFile.R $dir/$refpanelname/rerun.chr$chr.ids $refpaneldonor $dir/$refpanelname/donororder.rerun.chr$chr.ids
 	indnum=`bash getindividualnumverfromname.sh $name $dir/$refpanelname/donororder.rerun.chr$chr.ids 1 $refpaneldonor`
 	if [ "$indnum" == "" ] ;then

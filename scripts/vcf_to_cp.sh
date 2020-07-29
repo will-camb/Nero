@@ -13,7 +13,7 @@ fi
 set -e
 
 verbose=TRUE
-vcfdir="/willerslev/scratch/neo/impute_20200221/03022020"
+vcfdir="/willerslev/ukbiobank/imputation_vcf"
 genmapdir="/willerslev/datasets/hapmapRecomb/2011-01_phaseII_B37"
 dir="$1"
 chrlist=`seq $2 $3`
@@ -29,7 +29,8 @@ echo "Extracting site list of the panel data into $dir/sitelist"
 mkdir -p $dir/sitelist
 for chr in $chrlist; do
 echo "Processing Chromosome $chr"
-zcat ${vcfdir}/1000G.chr${chr}.maf1pm.best.03022020.vcf.gz | grep -v "^#" | cut -f3 | sed 's/:/_/' > $dir/sitelist/sitelist.chr${chr}.txt
+#zcat ${vcfdir}/1000G.chr${chr}.maf1pm.best.03022020.vcf.gz | grep -v "^#" | cut -f3 | sed 's/:/_/' > $dir/sitelist/sitelist.chr${chr}.txt
+zcat ${vcfdir}/ukb_imp_chr${chr}_v3.vcf.gz | grep -v "^#" | cut -f3 | sed 's/:/_/' > $dir/sitelist/sitelist.chr${chr}.txt
 echo "Done extracting site list!"
 done
 
@@ -38,7 +39,7 @@ echo "Converting vcf files to plink format using plink1.9"
 mkdir -p $dir/plinkformat
 for chr in $chrlist; do
 echo "Processing Chromosome $chr"
-$plink --vcf ${vcfdir}/1000G.chr$chr.maf1pm.best.03022020.vcf.gz --recode12 --double-id --out $dir/plinkformat/processed.chr${chr}
+$plink --vcf ${vcfdir}/ukb_imp_chr${chr}_v3.vcf.gz --recode12 --double-id --out $dir/plinkformat/processed.chr${chr}
 done
 echo "Done converting vcf to plink for all chromosomes!"
 
@@ -64,7 +65,7 @@ echo "Done making all recomb files!"
 echo "Making ids file $dir/cpinput/pop_ids"
 for chr in $chrlist; do
 echo "Processing Chromosome $chr"
-bcftools query -l ${vcfdir}/1000G.chr${chr}.maf1pm.best.03022020.vcf.gz > $dir/cpinput/pop_ids
+bcftools query -l ${vcfdir}/ukb_imp_chr${chr}_v3.vcf.gz > $dir/cpinput/pop_ids
 done 
 echo "Done making cp input pop_ids file!"
 #############################################################

@@ -108,10 +108,12 @@ fi
 if [ "$mode" == "full" ] || [ "$mode" == "repaint" ] ;then
     output="rerun"
     for chr in $chrlist ; do
-	outdat="$dir/$refpanelname/complete.chr$chr.phase"
+#	outdat="$dir/$refpanelname/complete.chr$chr.phase"
 	echo "Processing Chr $chr"
-	Rscript makeIds.R -k "$refpanelids" "$dir/$refpanelname/rerun.chr$chr.ids" "$removename"
+	Rscript makeIds.R -k $refpanelids $dir/$refpanelname/rerun.chr$chr.ids $removename
+	echo "Done makeIds.R"
 	Rscript orderRecipientsByDonorFile.R $dir/$refpanelname/rerun.chr$chr.ids $refpaneldonor $dir/$refpanelname/donororder.rerun.chr$chr.ids
+	echo "Done orderRecipientsByDonorFile.R"
 	indnum=`bash getindividualnumverfromname.sh $name $dir/$refpanelname/donororder.rerun.chr$chr.ids 1 $refpaneldonor`
 	if [ "$indnum" == "" ] ;then
 	    echo "ERROR!"
@@ -129,13 +131,13 @@ if [ "$mode" == "full" ] || [ "$mode" == "repaint" ] ;then
     done
 fi
 
-#if [ "$nchromosomes" == "1" ] ;then
+if [ "$nchromosomes" == "1" ] ;then
     fs combine -o $dir/$refpanelname/$name $dir/$refpanelname/cp/$output.chr1
-#else
-#    fcmd=`eval echo $dir/$refpanelname/cp/$output.chr{1..$nchromosomes}.chunkcounts.out`
-#    files=`ls $fcmd`
-#    fs combine -o $dir/$refpanelname/$name $files
-#fi
+else
+    fcmd=`eval echo $dir/$refpanelname/cp/$output.chr{1..$nchromosomes}.chunkcounts.out`
+    files=`ls $fcmd`
+    fs combine -o $dir/$refpanelname/$name $files
+fi
 
 ## This is how we'd tidy up locally. We keep everything and tidy up later.
 #rm -r $dir/$refpanelname/cp/

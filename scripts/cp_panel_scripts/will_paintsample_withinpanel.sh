@@ -134,7 +134,8 @@ fi
 if [ "$nchromosomes" == "1" ] ;then
     fs combine -o $dir/$refpanelname/$name $dir/$refpanelname/cp/$output.chr1
 else
-    fcmd=`eval echo $dir/$refpanelname/cp/$output.chr{1..$nchromosomes}.chunkcounts.out`
+    #fcmd=`eval echo $dir/$refpanelname/cp/$output.chr{1..$nchromosomes}.chunkcounts.out`
+    fcmd=`eval echo $dir/$refpanelname/cp/rerun.chr{1..$nchromosomes}.chunkcounts.out`
     files=`ls $fcmd`
     fs combine -o $dir/$refpanelname/$name $files
 fi

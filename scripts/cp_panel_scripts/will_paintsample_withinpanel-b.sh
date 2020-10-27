@@ -145,4 +145,4 @@ else
 fi
 
 ## Tidy up the temporary files
-rm -r $dir/$refpanelname/cp/
+#rm -r $dir/$refpanelname/cp/

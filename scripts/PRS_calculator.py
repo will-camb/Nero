@@ -23,10 +23,12 @@ filename = wget.download(url, out=output)
 GWAS = pd.read_csv(filename, sep='\t')
 GWAS[['chr','pos','1','2']] = GWAS['variant'].str.split(':',expand=True)
 
-output_file_name = args.chr + '.all_copyprobsperlocus.txt'
-if not os.path.isfile(os.path.join(args.o, file_name)):
-    all_copyprobsperlocusDF = pd.DataFrame(columns=pd.read_csv(args.phasefile, nrows=2, header=None).iloc[1])
-    all_copyprobsperlocusDF.to_csv(os.path.join(args.o, file_name), sep=' ', index=False)
+#If it doesn't already exist, make master PRS_calculations file
+if not os.path.isfile(os.path("PRS_calculations")):
+    PRS_calculations = pd.DataFrame(columns=['phenotype', 'ancestry', 'PRS'])
+    PRS_calculations.to_csv("PRS_calculations")
+
+list_MAF_Beta = list()
 
 for n in range(1,23):
     copyprobs = pd.read_csv(str(args.copyprobs_directory) + "/" + str(n) + ".all_copyprobsperlocus.txt.gz", header=None, skiprows=1, index_col=0)
@@ -55,7 +57,6 @@ for n in range(1,23):
     GWAS_n.pos = pd.to_numeric(GWAS_n.pos)
 
     list_of_SNPs = GWAS_n['pos'].tolist()
-    list_MAF_Beta = list()
 
     for i in list_of_SNPs:
         df = pd.DataFrame(list(zip(WHG[i].tolist(), phase[i].tolist())), columns=['WHG', 'phase'])
@@ -67,10 +68,17 @@ for n in range(1,23):
             Beta = GWAS17.loc[GWAS17['pos'] == i].beta.item()
             list_MAF_Beta.append((MAF, Beta))
 
-    PRS = 0
-    for j, k in list_MAF_Beta:
-        PRS += j * k
+PRS = 0
+for j, k in list_MAF_Beta:
+    PRS += j * k
 
+PRS_calculations_temp = pd.DataFrame(columns=['phenotype', 'ancestry', 'PRS'])
+PRS_calculations_temp.append({'phenotype': url, 'ancestry': 'WHG', 'PRS': PRS}, ignore_index=True)
+#NB calling all tmp files the same will prevent parallelisation
+PRS_calculations_temp.to_csv('PRS_calculations_temp')
 
-
+with open('PRS_calculations', 'w') as outfile:
+        with open('PRS_calculations_temp') as infile:
+            outfile.write(infile.read())
+os.remove("PRS_calculations_temp")
 os.remove("temp.tsv.gz")

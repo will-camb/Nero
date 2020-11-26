@@ -5,7 +5,6 @@
 ## The popidfile tells which individuals are in which populations (and which are to be used in the analysis)
 ## These are exactly as we'd use for GLOBETROTTER
 
-
 bash will_paint_withinpanel.sh full `pwd`/ancientvsancient will_ancientvsancient.cp
 
 ## I think you:

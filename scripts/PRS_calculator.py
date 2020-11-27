@@ -16,9 +16,9 @@ parser.add_argument("-o",
 args = parser.parse_args()
 
 #Download Neale Lab effect size estimates from Dropbox
-url = 'https://www.dropbox.com/s/x02h89mis8fe6md/age.gwas.imputed_v3.both_sexes.tsv.bgz?dl=0'
-output = os.getcwd() + 'temp.tsv.gz'
-filename = wget.download(url, out=output)
+url = 'https://www.dropbox.com/s/a8ip9cw3mgz0fad/20544_2.gwas.imputed_v3.both_sexes.tsv.bgz?dl=0'
+# output = os.getcwd() + 'temp.tsv.gz'
+filename = wget.download(url, out='temp.tsv.gz')
 #Load GWAS file, split to create new pos column
 GWAS = pd.read_csv(filename, sep='\t')
 GWAS[['chr','pos','1','2']] = GWAS['variant'].str.split(':',expand=True)

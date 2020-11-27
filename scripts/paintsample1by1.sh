@@ -22,9 +22,9 @@ for chr in $chrlist; do
   if [ ! -f $chr.master_all_copyprobsperlocus.txt ]; then
     echo "Making $chr.master_all_copyprobsperlocus.txt"
     touch $chr.master_all_copyprobsperlocus.txt
-fi
+  fi
+  done
 
-mkdir -p
 echo "Using temporary directory $dir"
 mkdir -p "$dir"
 mkdir -p "$dir/phasefiles"
@@ -34,13 +34,15 @@ $cmd
 echo "Done copying scripts, now making new idfile at $dir"
 { head -n $number ordered_all_pop_ids_mapped | tail -n 1 && tail -n 318 ordered_all_pop_ids_mapped; } > $dir/ordered_all_pop_ids_mapped
 
-#for chr in $chrlist ; do
-#  touch $dir/phasefiles/$chr.merged.phase
-#  head -n 3 phasefiles/$chr.merged.phase > $dir/phasefiles/$chr.merged.phase
-#  cat phasefiles/$chr.merged.phase | head -n $phaselinenumber | tail -n 2 >> $dir/phasefiles/$chr.merged.phase
-#  tail -n 636 phasefiles/$chr.merged.phase >> $dir/phasefiles/$chr.merged.phase
-#  sed -i ' ' "1s/.*/$nhaps/" $dir/phasefiles/$chr.merged.phase
-#done
+phaselinenumber2=$(($phaselinenumber + 1))
+for chr in $chrlist ; do
+  touch $dir/phasefiles/$chr.merged.phase
+  head -n 3 phasefiles/$chr.merged.phase > $dir/phasefiles/$chr.merged.phase
+  awk "NR>=$phaselinenumber && NR<=$phaselinenumber2" phasefiles/$chr.merged.phase >> $dir/phasefiles/$chr.merged.phase
+  tail -n 636 phasefiles/$chr.merged.phase >> $dir/phasefiles/$chr.merged.phase
+  sed -i '' "1s/.*/$nhaps/" $dir/phasefiles/$chr.merged.phase
+  echo "Copied lines to $dir/phasefiles/$chr.merged.phase"
+  done
 
 echo "Moving to directory $dir to run remaining commands"
 cd $dir

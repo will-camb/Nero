@@ -18,12 +18,28 @@ dir="temp.$name"
 chrlist=`seq 1 22`
 nhaps=638
 
+module load tools finestructure/4.1.1
+module load parallel/20200922
+module load anaconda3/4.4.0
+module load intel/perflibs
+module load gcc
+module load R/3.6.1
+
 for chr in $chrlist; do
   if [ ! -f $chr.master_all_copyprobsperlocus.txt ]; then
     echo "Making $chr.master_all_copyprobsperlocus.txt"
     touch $chr.master_all_copyprobsperlocus.txt
   fi
   done
+
+if [ ! -f ordered_all_pop_ids_mapped.allchr.chunkcounts.out ]; then
+    echo "Making ordered_all_pop_ids_mapped.allchr.chunkcounts.out, ordered_all_pop_ids_mapped.allchr.chunklengths.out, ordered_all_pop_ids_mapped.allchr.mutationprobs.out, ordered_all_pop_ids_mapped.allchr.regionchunkcounts.out, ordered_all_pop_ids_mapped.allchr.regionsquaredchunkcounts.out"
+    touch ordered_all_pop_ids_mapped.allchr.chunkcounts.out
+    touch ordered_all_pop_ids_mapped.allchr.chunklengths.out
+    touch ordered_all_pop_ids_mapped.allchr.mutationprobs.out
+    touch ordered_all_pop_ids_mapped.allchr.regionchunkcounts.out
+    touch ordered_all_pop_ids_mapped.allchr.regionsquaredchunkcounts.out
+  fi
 
 echo "Using temporary directory $dir"
 mkdir -p "$dir"
@@ -40,7 +56,8 @@ for chr in $chrlist ; do
   head -n 3 phasefiles/$chr.merged.phase > $dir/phasefiles/$chr.merged.phase
   awk "NR>=$phaselinenumber && NR<=$phaselinenumber2" phasefiles/$chr.merged.phase >> $dir/phasefiles/$chr.merged.phase
   tail -n 636 phasefiles/$chr.merged.phase >> $dir/phasefiles/$chr.merged.phase
-  sed -i '' "1s/.*/$nhaps/" $dir/phasefiles/$chr.merged.phase
+#  sed -i '' "1s/.*/$nhaps/" $dir/phasefiles/$chr.merged.phase
+  sed -i "1s/.*/$nhaps/" $dir/phasefiles/$chr.merged.phase
   echo "Copied lines to $dir/phasefiles/$chr.merged.phase"
   done
 
@@ -55,9 +72,14 @@ echo $cmd
 $cmd
 wait
 bash will_04-paintvspanel.sh
+cd ../
 
 for chr in $chrlist ; do
-  cat $dir/will_modernvsancient/painting/$chr.all_copyprobsperlocus.txt >> ../$chr.master_all_copyprobsperlocus.txt
-  rm $chr.all_copyprobsperlocus.txt
+  cat $dir/will_modernvsancient/painting/$chr.all_copyprobsperlocus.txt >> $chr.master_all_copyprobsperlocus.txt
+  awk "NR==2" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.chunkcounts.out >> ordered_all_pop_ids_mapped.allchr.chunkcounts.out
+  awk "NR==2" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.chunklengths.out >> ordered_all_pop_ids_mapped.allchr.chunklengths.out
+  awk "NR==2" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.mutationprobs.out >> ordered_all_pop_ids_mapped.allchr.mutationprobs.out
+  awk "NR==2" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.regionchunkcounts.out >> ordered_all_pop_ids_mapped.allchr.regionchunkcounts.out
+  awk "NR==2" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.regionsquaredchunkcounts.out >> ordered_all_pop_ids_mapped.allchr.regionsquaredchunkcounts.out
   done
 rm -r $dir

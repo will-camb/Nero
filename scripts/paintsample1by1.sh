@@ -2,7 +2,7 @@
 
 echo "Found $# arguments"
 if [ "$#" -lt "4" ] ; then
-    echo "Usage: paintsample1by1.sh <id> <name> <dir> <refdata.cp> <optional: removename>"
+    echo "Usage: paintsample1by1.sh <id> <n> <phaselinenumber> <cp_panel_scripts>"
     echo "<id>: the individual which is being painted against the reference panel"
     echo "<n>: the number of the individual in the idfile"
     echo "<phaselinenumber>: the line of the phasefile containing the individual's first haplotype"
@@ -17,7 +17,6 @@ cp_panel_scripts="$4"
 dir="temp.$name"
 chrlist=`seq 1 22`
 nhaps=638
-
 module load tools finestructure/4.1.1
 module load parallel/20200922
 module load anaconda3/4.4.0
@@ -74,11 +73,9 @@ cd $dir
 cmd="bash will_04-paintvspanel.sh"
 echo $cmd
 $cmd
-wait
 cmd="bash will_modernvsancient/painting/commandlist1.txt"
 echo $cmd
 $cmd
-wait
 bash will_04-paintvspanel.sh
 cd ../
 
@@ -88,10 +85,10 @@ for chr in $chrlist ; do
   done
 
 awk "NR==3" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.chunkcounts.out >> ordered_all_pop_ids_mapped.allchr.chunkcounts.out
-awk "NR==3" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.chunklengths.out >> ordered_all_pop_ids_mapped.allchr.chunklengths.out
-awk "NR==3" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.mutationprobs.out >> ordered_all_pop_ids_mapped.allchr.mutationprobs.out
-awk "NR==3" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.regionchunkcounts.out >> ordered_all_pop_ids_mapped.allchr.regionchunkcounts.out
-awk "NR==3" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.regionsquaredchunkcounts.out >> ordered_all_pop_ids_mapped.allchr.regionsquaredchunkcounts.out
+awk "NR==2" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.chunklengths.out >> ordered_all_pop_ids_mapped.allchr.chunklengths.out
+awk "NR==2" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.mutationprobs.out >> ordered_all_pop_ids_mapped.allchr.mutationprobs.out
+awk "NR==2" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.regionchunkcounts.out >> ordered_all_pop_ids_mapped.allchr.regionchunkcounts.out
+awk "NR==2" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.regionsquaredchunkcounts.out >> ordered_all_pop_ids_mapped.allchr.regionsquaredchunkcounts.out
 
 echo "Deleting temp $dir"
 rm -r $dir

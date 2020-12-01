@@ -76,10 +76,12 @@ cd ../
 
 for chr in $chrlist ; do
   cat $dir/will_modernvsancient/painting/$chr.all_copyprobsperlocus.txt >> $chr.master_all_copyprobsperlocus.txt
-  awk "NR==3" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.chunkcounts.out >> ordered_all_pop_ids_mapped.allchr.chunkcounts.out
-  awk "NR==3" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.chunklengths.out >> ordered_all_pop_ids_mapped.allchr.chunklengths.out
-  awk "NR==3" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.mutationprobs.out >> ordered_all_pop_ids_mapped.allchr.mutationprobs.out
-  awk "NR==3" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.regionchunkcounts.out >> ordered_all_pop_ids_mapped.allchr.regionchunkcounts.out
-  awk "NR==3" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.regionsquaredchunkcounts.out >> ordered_all_pop_ids_mapped.allchr.regionsquaredchunkcounts.out
   done
+  
+awk "NR==3" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.chunkcounts.out >> ordered_all_pop_ids_mapped.allchr.chunkcounts.out
+awk "NR==3" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.chunklengths.out >> ordered_all_pop_ids_mapped.allchr.chunklengths.out
+awk "NR==3" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.mutationprobs.out >> ordered_all_pop_ids_mapped.allchr.mutationprobs.out
+awk "NR==3" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.regionchunkcounts.out >> ordered_all_pop_ids_mapped.allchr.regionchunkcounts.out
+awk "NR==3" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.regionsquaredchunkcounts.out >> ordered_all_pop_ids_mapped.allchr.regionsquaredchunkcounts.out
+
 rm -r $dir

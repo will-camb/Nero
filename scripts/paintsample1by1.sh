@@ -35,9 +35,17 @@ for chr in $chrlist; do
 if [ ! -f ordered_all_pop_ids_mapped.allchr.chunkcounts.out ]; then
     echo "Making ordered_all_pop_ids_mapped.allchr.chunkcounts.out, ordered_all_pop_ids_mapped.allchr.chunklengths.out, ordered_all_pop_ids_mapped.allchr.mutationprobs.out, ordered_all_pop_ids_mapped.allchr.regionchunkcounts.out, ordered_all_pop_ids_mapped.allchr.regionsquaredchunkcounts.out"
     touch ordered_all_pop_ids_mapped.allchr.chunkcounts.out
+  fi
+if [ ! -f ordered_all_pop_ids_mapped.allchr.chunklengths.out ]; then
     touch ordered_all_pop_ids_mapped.allchr.chunklengths.out
+  fi
+if [ ! -f ordered_all_pop_ids_mapped.allchr.mutationprobs.out ]; then
     touch ordered_all_pop_ids_mapped.allchr.mutationprobs.out
+  fi
+if [ ! -f ordered_all_pop_ids_mapped.allchr.regionchunkcounts.out ]; then
     touch ordered_all_pop_ids_mapped.allchr.regionchunkcounts.out
+  fi
+if [ ! -f ordered_all_pop_ids_mapped.allchr.regionsquaredchunkcounts.out ]; then
     touch ordered_all_pop_ids_mapped.allchr.regionsquaredchunkcounts.out
   fi
 
@@ -74,14 +82,16 @@ wait
 bash will_04-paintvspanel.sh
 cd ../
 
+echo "Now copying all_copyprobsperlocus.txt and chunkcounts/chunklengths etc to master files"
 for chr in $chrlist ; do
   cat $dir/will_modernvsancient/painting/$chr.all_copyprobsperlocus.txt >> $chr.master_all_copyprobsperlocus.txt
   done
-  
+
 awk "NR==3" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.chunkcounts.out >> ordered_all_pop_ids_mapped.allchr.chunkcounts.out
 awk "NR==3" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.chunklengths.out >> ordered_all_pop_ids_mapped.allchr.chunklengths.out
 awk "NR==3" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.mutationprobs.out >> ordered_all_pop_ids_mapped.allchr.mutationprobs.out
 awk "NR==3" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.regionchunkcounts.out >> ordered_all_pop_ids_mapped.allchr.regionchunkcounts.out
 awk "NR==3" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.regionsquaredchunkcounts.out >> ordered_all_pop_ids_mapped.allchr.regionsquaredchunkcounts.out
 
+echo "Deleting temp $dir"
 rm -r $dir

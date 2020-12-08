@@ -8,19 +8,22 @@ parser.add_argument("-copyprobs_directory",
                     help="directory for all_copyprobsperlocus files; should be named in form n.all_copyprobsperlocus.txt.gz",
                     required=True)
 parser.add_argument("-phasefile_directory",
-                    help="directory for phasefiles; should be named in form n.merged.phase",
+                    help="directory for phasefiles; should be named in form chr#.merged.phase",
+                    required=True)
+parser.add_argument("-file_name",
+                    help="Phenotype being looked at; this should be the file name in the Neale Lab google sheet; NB extension must be .gz and not.bgz!",
                     required=True)
 parser.add_argument("-url",
                     help="Link to download Neale Lab effect size estimates from Dropbox",
                     required=True)
 parser.add_argument("-o",
-                    help="location to save all_copyprobsperlocus.out to",
+                    help="",
                     required=True)
 args = parser.parse_args()
 
 #Download Neale Lab effect size estimates from Dropbox
-# output = os.getcwd() + 'temp.tsv.gz'
-filename = wget.download(args.url, out='temp.tsv.gz')
+output = args.file_name
+filename = wget.download(args.url, out=output)
 #Load GWAS file, split to create new pos column
 GWAS = pd.read_csv(filename, sep='\t')
 GWAS[['chr','pos','1','2']] = GWAS['variant'].str.split(':',expand=True)

@@ -20,8 +20,7 @@ GWAS[['chr','pos','1','2']] = GWAS['variant'].str.split(':',expand=True)
 
 #If it doesn't already exist, make master PRS_calculations file
 if not os.path.exists("PRS_calculations"):
-    PRS_calculations = pd.DataFrame(columns=['phenotype', 'ancestry', 'PRS'])
-    PRS_calculations.to_csv("PRS_calculations")
+    open("PRS_calculations", 'a').close()
 
 list_MAF_Beta = list()
 
@@ -60,19 +59,14 @@ for n in range(1,23):
         df = df.loc[df['WHG'] >= 6]
         if df.shape[0] > 5:
             MAF = df.loc[df['phase'] == 0].shape[0] / df.shape[0]
-            Beta = GWAS17.loc[GWAS17['pos'] == i].beta.item()
+            Beta = GWAS_n.loc[GWAS_n['pos'] == i].beta.item()
             list_MAF_Beta.append((MAF, Beta))
 
 PRS = 0
 for j, k in list_MAF_Beta:
     PRS += j * k
 
-PRS_calculations_temp = pd.DataFrame(columns=['phenotype', 'ancestry', 'PRS'])
-PRS_calculations_temp.append({'phenotype': url, 'ancestry': 'WHG', 'PRS': PRS}, ignore_index=True)
-#NB calling all tmp files the same will prevent parallelisation
-PRS_calculations_temp.to_csv('PRS_calculations_temp')
+PRS_calculations_temp = pd.DataFrame({'phenotype': [args.filename], 'ancestry': ['WHG'], 'PRS': [PRS]})
+PRS_calculations_temp.to_csv('PRS_calculations', mode='a', header=False, index=False, sep=" ")
 
-with open('PRS_calculations', 'w') as outfile:
-        with open('PRS_calculations_temp') as infile:
-            outfile.write(infile.read())
-os.remove("PRS_calculations_temp")
+#NB calling all tmp files the same will prevent parallelisation

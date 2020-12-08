@@ -10,15 +10,17 @@ parser.add_argument("-copyprobs_directory",
 parser.add_argument("-phasefile_directory",
                     help="directory for phasefiles; should be named in form n.merged.phase",
                     required=True)
+parser.add_argument("-url",
+                    help="Link to download Neale Lab effect size estimates from Dropbox",
+                    required=True)
 parser.add_argument("-o",
                     help="location to save all_copyprobsperlocus.out to",
                     required=True)
 args = parser.parse_args()
 
 #Download Neale Lab effect size estimates from Dropbox
-url = 'https://www.dropbox.com/s/a8ip9cw3mgz0fad/20544_2.gwas.imputed_v3.both_sexes.tsv.bgz?dl=0'
 # output = os.getcwd() + 'temp.tsv.gz'
-filename = wget.download(url, out='temp.tsv.gz')
+filename = wget.download(args.url, out='temp.tsv.gz')
 #Load GWAS file, split to create new pos column
 GWAS = pd.read_csv(filename, sep='\t')
 GWAS[['chr','pos','1','2']] = GWAS['variant'].str.split(':',expand=True)
@@ -82,3 +84,4 @@ with open('PRS_calculations', 'w') as outfile:
             outfile.write(infile.read())
 os.remove("PRS_calculations_temp")
 os.remove("temp.tsv.gz")
+

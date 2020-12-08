@@ -1,5 +1,4 @@
 import pandas as pd
-import wget
 import argparse
 import os
 
@@ -13,20 +12,14 @@ parser.add_argument("-phasefile_directory",
 parser.add_argument("-file_name",
                     help="Phenotype being looked at; this should be the file name in the Neale Lab google sheet; NB extension must be .gz and not.bgz!",
                     required=True)
-parser.add_argument("-url",
-                    help="Link to download Neale Lab effect size estimates from Dropbox",
-                    required=True)
 args = parser.parse_args()
 
-#Download Neale Lab effect size estimates from Dropbox
-# output = args.file_name
-# filename = wget.download(args.url, out=output)
-#Load GWAS file, split to create new pos column
-GWAS = pd.read_csv(filename, sep='\t')
+#Load Neale Lab effect size for this phenotype
+GWAS = pd.read_csv(args.file_name, sep='\t')
 GWAS[['chr','pos','1','2']] = GWAS['variant'].str.split(':',expand=True)
 
 #If it doesn't already exist, make master PRS_calculations file
-if not os.path.isfile(os.path("PRS_calculations")):
+if not os.path.exists("PRS_calculations"):
     PRS_calculations = pd.DataFrame(columns=['phenotype', 'ancestry', 'PRS'])
     PRS_calculations.to_csv("PRS_calculations")
 
@@ -83,5 +76,3 @@ with open('PRS_calculations', 'w') as outfile:
         with open('PRS_calculations_temp') as infile:
             outfile.write(infile.read())
 os.remove("PRS_calculations_temp")
-os.remove("temp.tsv.gz")
-

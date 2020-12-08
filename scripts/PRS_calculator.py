@@ -5,10 +5,10 @@ import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-copyprobs_directory",
-                    help="directory for all_copyprobsperlocus files; should be named in form n.all_copyprobsperlocus.txt.gz",
+                    help="Directory of all_copyprobsperlocus files; should be named in form n.all_copyprobsperlocus.txt.gz",
                     required=True)
 parser.add_argument("-phasefile_directory",
-                    help="directory for phasefiles; should be named in form chr#.merged.phase",
+                    help="Directory of phasefiles; should be named in form chr#.merged.phase",
                     required=True)
 parser.add_argument("-file_name",
                     help="Phenotype being looked at; this should be the file name in the Neale Lab google sheet; NB extension must be .gz and not.bgz!",
@@ -16,14 +16,11 @@ parser.add_argument("-file_name",
 parser.add_argument("-url",
                     help="Link to download Neale Lab effect size estimates from Dropbox",
                     required=True)
-parser.add_argument("-o",
-                    help="",
-                    required=True)
 args = parser.parse_args()
 
 #Download Neale Lab effect size estimates from Dropbox
-output = args.file_name
-filename = wget.download(args.url, out=output)
+# output = args.file_name
+# filename = wget.download(args.url, out=output)
 #Load GWAS file, split to create new pos column
 GWAS = pd.read_csv(filename, sep='\t')
 GWAS[['chr','pos','1','2']] = GWAS['variant'].str.split(':',expand=True)

@@ -20,7 +20,8 @@ echo "Extracting results file from Dropbox"
 MY_FILE=$file_name
 NEW_EXT=${MY_FILE/bgz/gz}
 mv $file_name $NEW_EXT
-echo "Success! Now running PRS calculator"
-`python3 PRS_calculator.py -copyprobs_directory copyprobs_directory -phasefile_directory $phasefile_directory -file_name $NEW_EXT`
+echo "Success! Now running PRS calculator:"
+echo "python3 PRS_calculator.py -copyprobs_directory $copyprobs_directory -phasefile_directory $phasefile_directory -file_name $NEW_EXT"
+`python3 PRS_calculator.py -copyprobs_directory $copyprobs_directory -phasefile_directory $phasefile_directory -file_name $NEW_EXT`
 echo "All done, now tidying up temp files"
 rm $NEW_EXT

@@ -1,4 +1,6 @@
 #!/bin/bash
+cd $PBS_O_WORKDIR
+module load anaconda3/4.4.0
 
 chrlist=`seq 1 22`
 for chr in $chrlist; do

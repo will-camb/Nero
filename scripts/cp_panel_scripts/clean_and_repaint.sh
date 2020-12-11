@@ -4,7 +4,8 @@ module load anaconda3/4.4.0
 
 chrlist=`seq 1 22`
 for chr in $chrlist; do
-    length=`head -n 1 $chr.master_all_copyprobsperlocus.txt`
+    # length=`head -n 1 $chr.master_all_copyprobsperlocus.txt`
+    length=`awk -F ',' 'NR==2 { print $0 }' phasefiles/$chr.merged.phase`
     awk -F ',' -v nsnps="$length" 'length($3) == nsnps' $chr.master_all_copyprobsperlocus.txt > temp.$chr.master_all_copyprobsperlocus.txt
     cut -f1 -d"," temp.$chr.master_all_copyprobsperlocus.txt | uniq -c > temp.$chr.counts
 done

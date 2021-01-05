@@ -67,7 +67,6 @@ for n in range(1, 23):
     haps = list()
     for h in range(int(phase.shape[0] / 2)):
         haps.extend([1, 2])
-
     for anc in ["CHG", "EHG", "Farmer", "WHG", "Yamnaya"]:
         if anc == 'CHG':
             analyse_anc(copyprobs.iloc[0::10], anc)

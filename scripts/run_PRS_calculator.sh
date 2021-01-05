@@ -16,14 +16,14 @@ manifest="$1"
 file_name="$2"
 copyprobs_directory="$3"
 phasefile_directory="$4"
-idfile_directory="$5"
+idfile="$5"
 echo "*** Extracting results file from Dropbox ***"
 `awk -F ',' -v file_name="$file_name" '$5 == file_name { print $6 }' $manifest`
 MY_FILE=$file_name
 NEW_EXT=${MY_FILE/bgz/gz}
 mv $file_name $NEW_EXT
 echo "*** Success! Now running PRS calculator: ***"
-echo "python3 PRS_calculator.py -copyprobs_directory $copyprobs_directory -phasefile_directory $phasefile_directory -file_name $NEW_EXT"
+echo "python3 PRS_calculator.py -copyprobs_directory $copyprobs_directory -phasefile_directory $phasefile_directory -idfile $idfile -file_name $NEW_EXT"
 `python3 PRS_calculator.py -copyprobs_directory $copyprobs_directory -phasefile_directory $phasefile_directory -idfile $idfile -file_name $NEW_EXT`
 echo "*** All done, now tidying up temp files ***"
 rm $NEW_EXT

@@ -9,14 +9,15 @@ def analyse_anc(anc_copyprobs, anc):
         anc_copyprobs = anc_copyprobs[2].dropna().apply(lambda x: pd.Series(list(x))).apply(pd.to_numeric)
     anc_copyprobs.columns = positions[0].tolist()
     for i in list_of_SNPs:
-        df = pd.DataFrame(list(zip(anc_copyprobs[i].tolist(), phase[i].tolist())), columns=[str(anc), 'phase'])
-        # NB using a cut-off of 6 here instead of weighting each SNP by ancestry probability
-        df1 = df.loc[df[anc] >= 6]
+        anc_copyprobs_i = pd.DataFrame(zip(anc_copyprobs.index, haps, anc_copyprobs[i]))
+        phase_i = pd.DataFrame(zip(phase.index, haps, phase[i]))
+        df = pd.merge(anc_copyprobs_i, phase_i, left_on=[0,1], right_on=[0,1]).set_index(0)
+        df.columns=['haps', str(anc), 'phase']
+        df1 = df.loc[df[anc]>=6]
         if df1.shape[0] > 1:
-            # To check: Is the minor allele always 0 in phasefile?
-            MAF = df1.loc[df1['phase'] == '0'].shape[0] / df1.shape[0]
-            Beta = GWAS_n.loc[GWAS_n['pos'] == i].beta.item()
-            anc_dict[anc].append([MAF, Beta])
+            MAF = df1.loc[df1['phase']=='0'].shape[0]/df1.shape[0]
+            Beta = GWAS_n.loc[GWAS_n['pos']==i].beta.item()
+            anc_dict[anc].append([MAF,Beta])
 
 
 parser = argparse.ArgumentParser()
@@ -25,6 +26,9 @@ parser.add_argument("-copyprobs_directory",
                     required=True)
 parser.add_argument("-phasefile_directory",
                     help="Directory of phasefiles; should be named in form chr#.merged.phase",
+                    required=True)
+parser.add_argument("-idfile",
+                    help="Directory of idfile used in chromopainter ('individual pop 1')",
                     required=True)
 parser.add_argument("-file_name",
                     help="Phenotype being looked at; this should be the file name in the Neale Lab google sheet; NB extension must be .gz and not.bgz!",
@@ -36,6 +40,8 @@ GWAS[['chr', 'pos', '1', '2']] = GWAS['variant'].str.split(':', expand=True)
 # If it doesn't already exist, make master PRS_calculations file
 if not os.path.exists("PRS_calculations"):
     open("PRS_calculations", 'a').close()
+idfile = pd.read_csv(args.idfile, header=None, sep=" ", index_col=0)
+idfile = idfile[~idfile.index.isin(idfile.tail(318).index.tolist())]
 anc_dict = defaultdict(list)
 for n in range(1, 23):
     print("Processing chromosome" + str(n))
@@ -57,6 +63,11 @@ for n in range(1, 23):
     # Take only UKBB individuals in phase
     phase = phase[~phase.index.isin(phase.tail(636).index.tolist())]
     phase.columns = positions[0]
+    phase.index = [val for val in idfile.index.unique().tolist() for _ in (0, 1)]
+    haps = list()
+    for h in range(int(phase.shape[0] / 2)):
+        haps.extend([1, 2])
+
     for anc in ["CHG", "EHG", "Farmer", "WHG", "Yamnaya"]:
         if anc == 'CHG':
             analyse_anc(copyprobs.iloc[0::10], anc)

@@ -37,7 +37,6 @@ args = parser.parse_args()
 # Load Neale Lab effect size for this phenotype
 GWAS = pd.read_csv(args.file_name, sep='\t')
 GWAS[['chr', 'pos', '1', '2']] = GWAS['variant'].str.split(':', expand=True)
-# If it doesn't already exist, make master PRS_calculations file
 if not os.path.exists("PRS_calculations"):
     open("PRS_calculations", 'a').close()
 idfile = pd.read_csv(args.idfile, header=None, sep=" ", index_col=0)
@@ -45,22 +44,17 @@ idfile = idfile[~idfile.index.isin(idfile.tail(318).index.tolist())]
 anc_dict = defaultdict(list)
 for n in range(1, 23):
     print("Processing chromosome" + str(n))
-    copyprobs = pd.read_csv(str(args.copyprobs_directory) + "/" + str(n) + ".all_copyprobsperlocus.txt.gz", header=None,
+    copyprobs = pd.read_csv(str(args.copyprobs_directory) + "/" + str(n) + ".master_all_copyprobsperlocus.txt.gz", header=None,
                             skiprows=1, index_col=0)
     positions = pd.read_csv(str(args.phasefile_directory) + "/" + str(n) + ".merged.phase", skiprows=2, nrows=1,
                             sep=" ", header=None).T.drop(0)
-    # Select chr, and SNPs that have been painted from GWAS file
     GWAS_n = GWAS[GWAS['chr'] == str(n)]
     GWAS_n = GWAS_n.loc[GWAS_n['pos'].astype(str).isin(positions[0].astype(str).tolist())]
-    # Select SNPs with a p-value less than 0.05
     GWAS_n = GWAS_n[GWAS_n['pval'] <= 0.05]
     GWAS_n.pos = pd.to_numeric(GWAS_n.pos)
     list_of_SNPs = GWAS_n['pos'].tolist()
-    # Load phase file to get genotype for each hap
-    # NB Need to change this to ensure ordering of haps is the same in copyprobs and phasefile
     phase = pd.read_csv(str(args.phasefile_directory) + "/" + str(n) + ".merged.phase", skiprows=3, header=None)
     phase = phase[0].dropna().apply(lambda x: pd.Series(list(x)))
-    # Take only UKBB individuals in phase
     phase = phase[~phase.index.isin(phase.tail(636).index.tolist())]
     phase.columns = positions[0]
     phase.index = [val for val in idfile.index.unique().tolist() for _ in (0, 1)]

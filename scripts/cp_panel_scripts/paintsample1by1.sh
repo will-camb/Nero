@@ -9,6 +9,7 @@ if [ "$#" -lt "4" ] ; then
     echo "<cp_panel_scripts>: the location of the panel scripts which will be copied to each temp directory"
     exit 0
 fi
+set -e
 
 name="$1"
 number="$2"
@@ -48,6 +49,11 @@ if [ ! -f ordered_all_pop_ids_mapped.allchr.regionsquaredchunkcounts.out ]; then
     touch ordered_all_pop_ids_mapped.allchr.regionsquaredchunkcounts.out
   fi
 
+if [ -d $dir ]; then
+    echo "Aborting this individual as $dir already exists"
+    exit 1
+  fi
+
 echo "Using temporary directory $dir"
 mkdir -p "$dir"
 mkdir -p "$dir/phasefiles"
@@ -79,16 +85,16 @@ $cmd
 bash will_04-paintvspanel.sh
 cd ../
 
-echo "Now copying all_copyprobsperlocus.txt and chunkcounts/chunklengths etc to master files"
-for chr in $chrlist ; do
-  cat $dir/will_modernvsancient/painting/$chr.all_copyprobsperlocus.txt >> $chr.master_all_copyprobsperlocus.txt
-  done
+#echo "Now copying all_copyprobsperlocus.txt and chunkcounts/chunklengths etc to master files"
+#for chr in $chrlist ; do
+#  cat $dir/will_modernvsancient/painting/$chr.all_copyprobsperlocus.txt >> $chr.master_all_copyprobsperlocus.txt
+#  done
 
-awk "NR==3" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.chunkcounts.out >> ordered_all_pop_ids_mapped.allchr.chunkcounts.out
-awk "NR==2" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.chunklengths.out >> ordered_all_pop_ids_mapped.allchr.chunklengths.out
-awk "NR==2" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.mutationprobs.out >> ordered_all_pop_ids_mapped.allchr.mutationprobs.out
-awk "NR==2" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.regionchunkcounts.out >> ordered_all_pop_ids_mapped.allchr.regionchunkcounts.out
-awk "NR==2" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.regionsquaredchunkcounts.out >> ordered_all_pop_ids_mapped.allchr.regionsquaredchunkcounts.out
+#awk "NR==3" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.chunkcounts.out >> ordered_all_pop_ids_mapped.allchr.chunkcounts.out
+#awk "NR==2" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.chunklengths.out >> ordered_all_pop_ids_mapped.allchr.chunklengths.out
+#awk "NR==2" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.mutationprobs.out >> ordered_all_pop_ids_mapped.allchr.mutationprobs.out
+#awk "NR==2" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.regionchunkcounts.out >> ordered_all_pop_ids_mapped.allchr.regionchunkcounts.out
+#awk "NR==2" $dir/will_modernvsancient/painting/ordered_all_pop_ids_mapped.allchr.regionsquaredchunkcounts.out >> ordered_all_pop_ids_mapped.allchr.regionsquaredchunkcounts.out
 
-echo "Deleting temp $dir"
-rm -r $dir
+#echo "Deleting temp $dir"
+#rm -r $dir

@@ -66,6 +66,24 @@ regionsquaredchunkcounts.to_csv("ordered_all_pop_ids_mapped.allchr.regionsquared
 mutationprobs = pd.read_csv("ordered_all_pop_ids_mapped.allchr.mutationprobs.out", header=None, sep=" ", error_bad_lines=False, dtype = str)
 mutationprobs = mutationprobs[~mutationprobs[0].isin(to_paint)]
 mutationprobs.to_csv("ordered_all_pop_ids_mapped.allchr.mutationprobs.out", sep=" ", header=False, index=False)
+
+## And for the per-chromosome results
+for i in range(1,23):
+  chunkcounts = pd.read_csv("perchrom_results/ordered_all_pop_ids_mapped.chr"+str(i)+".chunkcounts.out", header=None, sep=" ", error_bad_lines=False, dtype = str)
+  chunkcounts = chunkcounts[~chunkcounts[0].isin(to_paint)]
+  chunkcounts.to_csv("perchrom_results/ordered_all_pop_ids_mapped.chr"+str(i)+".chunkcounts.out", sep=" ", header=False, index=False)
+  chunklengths = pd.read_csv("perchrom_results/ordered_all_pop_ids_mapped.chr"+str(i)+".chunklengths.out", header=None, sep=" ", error_bad_lines=False, dtype = str)
+  chunklengths = chunklengths[~chunklengths[0].isin(to_paint)]
+  chunklengths.to_csv("perchrom_results/ordered_all_pop_ids_mapped.chr"+str(i)+".chunklengths.out", sep=" ", header=False, index=False)
+  regionchunkcounts = pd.read_csv("perchrom_results/ordered_all_pop_ids_mapped.chr"+str(i)+".regionchunkcounts.out", header=None, sep=" ", error_bad_lines=False, dtype = str)
+  regionchunkcounts = regionchunkcounts[~regionchunkcounts[0].isin(to_paint)]
+  regionchunkcounts.to_csv("perchrom_results/ordered_all_pop_ids_mapped.chr"+str(i)+".regionchunkcounts.out", sep=" ", header=False, index=False)
+  regionsquaredchunkcounts = pd.read_csv("perchrom_results/ordered_all_pop_ids_mapped.chr"+str(i)+".regionsquaredchunkcounts.out", header=None, sep=" ", error_bad_lines=False, dtype = str)
+  regionsquaredchunkcounts = regionsquaredchunkcounts[~regionsquaredchunkcounts[0].isin(to_paint)]
+  regionsquaredchunkcounts.to_csv("perchrom_results/ordered_all_pop_ids_mapped.chr"+str(i)+".regionsquaredchunkcounts.out", sep=" ", header=False, index=False)
+  mutationprobs = pd.read_csv("perchrom_results/ordered_all_pop_ids_mapped.chr"+str(i)+".mutationprobs.out", header=None, sep=" ", error_bad_lines=False, dtype = str)
+  mutationprobs = mutationprobs[~mutationprobs[0].isin(to_paint)]
+  mutationprobs.to_csv("perchrom_results/ordered_all_pop_ids_mapped.chr"+str(i)+".mutationprobs.out", sep=" ", header=False, index=False)
 END
 
 rm -r temp.*

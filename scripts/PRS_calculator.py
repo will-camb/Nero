@@ -12,10 +12,12 @@ def analyse_anc(anc_copyprobs, anc):
         df.columns = ['haps', str(anc), 'phase']
         df1 = df.loc[df[anc] >= 6]
         if df1.shape[0] > 1:
-            MAF = df1.loc[df1['phase'] == '0'].shape[0] / df1.shape[0]
+            minor = df.loc[df['phase'] == '0'][anc].sum() #Sum painting prob for minor allele
+            major = df.loc[df['phase'] == '1'][anc].sum() #Sum painting prob for major allele
+            anc_maf = minor / (minor + major)
             Beta = GWAS_n.loc[GWAS_n['pos'] == i].beta.item()
             vector = vectors[vectors['start.pos'].astype(int) == i]['vector'].item()
-            anc_dict[anc].append([MAF, Beta, vector])
+            anc_dict[anc].append([anc_maf, Beta, vector])
 
 
 parser = argparse.ArgumentParser()
@@ -111,4 +113,3 @@ PRS_dict['Phenotype'] = args.file_name
 PRS_calculations_temp = pd.DataFrame([PRS_dict])
 PRS_calculations_temp = PRS_calculations_temp[["Phenotype", "CHG", "EHG", "Farmer", "WHG", "Yamnaya"]]
 PRS_calculations_temp.to_csv('PRS_calculations', mode='a', index=False, header=False, sep=" ")
-# NB calling all tmp files the same will prevent parallelisation

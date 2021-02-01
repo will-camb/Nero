@@ -17,8 +17,7 @@ def analyse_anc(anc_copyprobs, anc, chrom):
         major = df.loc[df['phase'] == '1'][anc].sum() #Sum painting prob for major allele
         anc_maf = minor / (minor + major + 1)
         Beta = GWAS_n.loc[GWAS_n['pos'] == i].beta.item()
-        vector = vectors[vectors['start.pos'].astype(int) == i]['vector'].item()
-        PRS += anc_maf * Beta * vector
+        PRS += anc_maf * Beta
     anc_dict[anc].append([chrom, PRS])
 
 
@@ -52,20 +51,6 @@ for n in range(1, 23):
                             nrows=1,
                             sep=" ",
                             header=None).T.drop(0)
-    vectors = pd.read_csv(str(args.phasefile_directory) + "/" + str(n) + ".merged.phase",
-                          skiprows=2,
-                          nrows=1,
-                          sep=" ",
-                          header=None).T.drop(0)
-    vectors.columns = ['start.pos']
-    vectors['previous'] = vectors['start.pos'].shift(1)
-    vectors['next'] = vectors['start.pos'].shift(-1)
-    vectors = vectors.fillna(0)
-    vectors['vector'] = (vectors.next - vectors.previous) / 2
-    vectors.loc[vectors.index[-1], 'vector'] = 0
-    vectors.loc[vectors.index[-1], 'vector'] = vectors.vector.mean()
-    vectors = vectors[['start.pos', 'vector']]
-    vectors['start.pos'] = vectors['start.pos'].astype(str)
     GWAS_n = GWAS[GWAS['chr'] == str(n)]
     GWAS_n = GWAS_n.loc[GWAS_n['pos'].astype(str).isin(positions[0].astype(str).tolist())]
     GWAS_n.pos = pd.to_numeric(GWAS_n.pos)
@@ -80,36 +65,11 @@ for n in range(1, 23):
     for h in range(int(phase.shape[0] / 2)):
         haps.extend([1, 2])
     for anc in ["CHG", "EHG", "Farmer", "African", "EastAsian", "WHG", "Yamnaya"]:
-        if anc == 'CHG':
-            print("Calculating MAF/Beta/vectors for CHG, chr" + str(n))
-            anc_copyprobs = pd.read_csv("temp.CHG." + str(n) + ".master_all_copyprobsperlocus.txt.gz", sep=" ", index_col=0)
-            analyse_anc(anc_copyprobs, anc, n)
-        elif anc == 'EHG':
-            print("Calculating MAF/Beta/vectors for EHG, chr" + str(n))
-            anc_copyprobs = pd.read_csv("temp.EHG." + str(n) + ".master_all_copyprobsperlocus.txt.gz", sep=" ", index_col=0)
-            analyse_anc(anc_copyprobs, anc, n)
-        elif anc == 'Farmer':
-            print("Calculating MAF/Beta/vectors for Farmer, chr" + str(n))
-            anc_copyprobs = pd.read_csv("temp.Farmer." + str(n) + ".master_all_copyprobsperlocus.txt.gz", sep=" ", index_col=0)
-            analyse_anc(anc_copyprobs, anc, n)
-        elif anc == 'African':
-            print("Calculating MAF/Beta/vectors for African, chr" + str(n))
-            anc_copyprobs = pd.read_csv("temp.African." + str(n) + ".master_all_copyprobsperlocus.txt.gz", sep=" ",
-                                        index_col=0)
-            analyse_anc(anc_copyprobs, anc, n)
-        elif anc == 'EastAsian':
-            print("Calculating MAF/Beta/vectors for EastAsian, chr" + str(n))
-            anc_copyprobs = pd.read_csv("temp.EastAsian." + str(n) + ".master_all_copyprobsperlocus.txt.gz", sep=" ",
-                                        index_col=0)
-            analyse_anc(anc_copyprobs, anc, n)
-        elif anc == 'WHG':
-            print("Calculating MAF/Beta/vectors for WHG, chr" + str(n))
-            anc_copyprobs = pd.read_csv("temp.WHG." + str(n) + ".master_all_copyprobsperlocus.txt.gz", sep=" ", index_col=0)
-            analyse_anc(anc_copyprobs, anc, n)
-        elif anc == 'Yamnaya':
-            print("Calculating MAF/Beta/vectors for Yamnaya, chr" + str(n))
-            anc_copyprobs = pd.read_csv("temp.Yamnaya." + str(n) + ".master_all_copyprobsperlocus.txt.gz", sep=" ", index_col=0)
-            analyse_anc(anc_copyprobs, anc, n)
+        print("Calculating MAF/Beta for " + str(anc) + ", chr" + str(n))
+        anc_copyprobs = pd.read_csv("temp." + str(anc) + "." + str(n) + ".master_all_copyprobsperlocus.txt.gz",
+                                    sep=" ",
+                                    index_col=0)
+        analyse_anc(anc_copyprobs, anc, n)
 print("*** Success! Now calculating PRS per anc and writing to file ***")
 # PRS_dict = dict()
 # for anc in ["CHG", "EHG", "Farmer", "African", "EastAsian", "WHG", "Yamnaya"]:

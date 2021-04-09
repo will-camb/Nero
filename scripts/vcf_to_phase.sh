@@ -1,5 +1,5 @@
 #!/bin/bash
-cd $PBS_O_WORKDIR
+#cd $PBS_O_WORKDIR
 module load pbwt/20200610
 module load tools finestructure/4.1.1
 module load perl/5.20.1

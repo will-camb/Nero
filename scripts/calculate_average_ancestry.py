@@ -18,6 +18,7 @@ types_dict.update({col: 'int8' for col in col_names if col not in types_dict})
 copyprobs = pd.read_csv(args.copyprobs_file, sep=" ", dtype=types_dict)
 copyprobs.set_index("0", inplace=True)
 copyprobs.columns = copyprobs.columns.astype(int)
+copyprobs.columns = copyprobs.columns.tolist()[::-1]
 df = pd.DataFrame(copyprobs.mean().tolist())
 df[1] = copyprobs.columns.tolist()
 df.to_csv("average_ancestry_per_snp/average_ancestry_per_snp_" + args.copyprobs_file, header=False, index=False)

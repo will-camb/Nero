@@ -1,15 +1,15 @@
 import os
 import argparse
 import math
-from run_ms_prime_v2_for_fs import RunMsPrime
+from run_ms_prime_v4_for_fs import RunMsPrime
 
 
 class RunMsWithFsOutput:
 
-    def __init__(self, nhaps=[200, 102, 12, 162, 14, 86, 74, 20, 24],
-                 sample_times=[0, 149, 150, 200, 175, 300, 275, 251, 250],
+    def __init__(self, nhaps=[2, 0, 0, 360, 30, 96, 84, 10, 26],
+                 sample_times=[0, 149, 150, 187, 158, 266, 234, 314, 289],
                  hg_mig_rate=2e-3, length=198295559, recombination_rate=1e-8, mutation_rate=1.25e-8,
-                 popnames=["modern", "bronze", "baa", "neolithic", "yam", "WHG", "EHG", "ana", "CHG"],
+                 popnames=["modern", "bronze", "baa", "farmer", "yam", "WHG", "EHG", "farmeranatolian", "CHG"],
                  populations=[0, 0, 4, 0, 1, 2, 3, 0, 1]
                  ):
         self.nhaps = nhaps
@@ -22,32 +22,30 @@ class RunMsWithFsOutput:
         self.populations = populations
 
     def run(self):
-        #run simulation
+        #  run simulation
         tree_sequence = RunMsPrime(nhaps=self.nhaps, sample_times=self.sample_times, hg_mig_rate=self.hg_mig_rate,
                  length=self.length, recombination_rate=self.recombination_rate, mutation_rate=self.mutation_rate,
                  popnames=self.popnames, populations=self.populations).run_model()
 
-        # args for script
+        #  args for script
         parser = argparse.ArgumentParser()
-        parser.add_argument("-out_ms",
-                            help="Path and filename to save the tree sequence to e.g. Documents/msprimetest NB directory must already exist",
-                            required=True)
-        parser.add_argument("-path_fs",
-                            help="Path to save FINESTRUCTURE input files to e.g. Documents/msprime2fstest",
+        parser.add_argument("-path_out",
+                            help="Path to save tree sequence and FINESTRUCTURE input files to",
                             required=True)
         parser.add_argument("-seed",
                             help="If this is None, automatically generated",
                             required=False)
         args = parser.parse_args()
-        tree_sequence.dump(path=args.out_ms)
-        path = args.path_fs
+        path = args.path_out
         if not os.path.exists(path):
             os.makedirs(path)
+        tree_sequence.dump(args.path_out + str("/tree_sequence.ts"))
+
 
         indnames = []
         indpopnames = []
         for i, p in enumerate(self.populations):
-            tmp = [self.popnames[i] + "_" + str(j) for j in range(math.floor(self.nhaps[i] / 2))]
+            tmp = [self.popnames[i] + str(j) for j in range(math.floor(self.nhaps[i] / 2))]
             for n in tmp:
                 indnames.append(n)
                 indpopnames.append(self.popnames[i])

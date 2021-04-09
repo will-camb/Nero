@@ -1,4 +1,5 @@
 #  Updated msprime model to reflect samples in mesoneo painting of UKBiobank
+#  Generation times: assume 30 years average per generation here
 
 import math
 import msprime
@@ -6,27 +7,26 @@ import msprime
 
 class RunMsPrime:
 
-    def __init__(self, nhaps=[2, 0, 0, 360, 30, 96, 84, 10, 26],
-                 sample_times=[0, 149, 150, 200, 175, 300, 275, 251, 250],
-                 hg_mig_rate=2e-3, length=198295559, mutation_rate=1.25e-8,
-                 popnames=["modern", "bronze", "baa", "neolithic", "yam", "WHG", "EHG", "ana", "CHG"],
-                 populations=[0, 0, 4, 0, 1, 2, 3, 0, 1],
-                 # infile="/willerslev/datasets/hapmapRecomb/2011-01_phaseII_B37/genetic_map_GRCh37_chr3.txt",
-                 recombination_rate=1e-8
+    def __init__(self, nhaps=[0, 0, 0, 360, 30, 96, 84, 10, 26],
+                 sample_times=[0, 149, 150, 187, 158, 266, 234, 314, 289],
+                 hg_mig_rate=2e-3, length=198295559, recombination_rate=1e-8, mutation_rate=1.25e-8,
+                 popnames=["modern", "bronze", "baa", "farmer", "yam", "WHG", "EHG", "ana", "CHG"],
+                 populations=[0, 0, 4, 0, 1, 2, 3, 0, 1]
                  ):
         self.nhaps = nhaps
         self.sample_times = sample_times
         self.hg_mig_rate = hg_mig_rate
         self.length = length
+        self.recombination_rate = recombination_rate
         self.mutation_rate = mutation_rate
         self.popnames = popnames
         self.populations = populations
-        # self.infile = infile
-        self.recombination_rate = recombination_rate
+
+        infile = "/Users/williambarrie/Desktop/genetic_map_GRCh37_chr3.txt"
+        self.recomb_map = msprime.RecombinationMap.read_hapmap(infile)
+
 
     def run_model(self):
-        # Load recomb map
-        # recomb_map = msprime.RecombinationMap.read_hapmap(self.infile)
 
         # initial population sizes:
         N_bronze = 50000
@@ -99,11 +99,12 @@ class RunMsPrime:
 
         # Simulate chromosome 3 only
         tree_sequence = msprime.simulate(
-            # recombination_map=recomb_map,
+            # length=self.length,
+            # recombination_rate=self.recombination_rate,
             mutation_rate=self.mutation_rate,
             population_configurations=population_configurations,
             demographic_events=demographic_events,
             samples=samples,
-            recombination_rate=self.recombination_rate
+            recombination_map=self.recomb_map
         )
         return tree_sequence

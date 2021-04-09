@@ -83,8 +83,10 @@ class RunMsWithFsOutput:
 
         # recomb_file
         print(
-            "Need to run command to create cp input recomb file using recombination map used for msprime simulation. Something like..."
-            "< willerslev/software/fs_4.0.1/convertrecfile.pl -M hapmap -U cM/MB path/phasefile /willerslev/datasets/hapmapRecomb/2011-01_phaseII_B37/genetic_map_GRCh37_chr${chr}.txt path/recombfile >"
+            "Need to run command to create cp input recomb file using recombination map used for msprime simulation. \
+            Something like..."
+            "< willerslev/software/fs_4.0.1/convertrecfile.pl -M hapmap -U cM/MB path/phasefile /willerslev/datasets/\
+            hapmapRecomb/2011-01_phaseII_B37/genetic_map_GRCh37_chr${chr}.txt path/recombfile >"
             
             "The recombination map used for the msprime model was" + self.infile
         )

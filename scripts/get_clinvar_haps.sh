@@ -27,10 +27,16 @@ haps = list()
 for h in range(int(phase.shape[0] / 2)):
     haps.extend([1, 2])
 phase[2] = haps
-phase = phase[phase[0]==0]
+phase_0 = phase[phase[0]==0]
 mapping = pd.read_csv("name2id_UKBB", sep=" ", header=None)
-phase[1] = phase[1].map(mapping.set_index(0)[2].to_dict())
-phase.dropna(inplace=True)
-phase[[1,2]].to_csv('output_files/$rsID.haps', header=False, index=False)
+phase_0[1] = phase_0[1].map(mapping.set_index(0)[2].to_dict())
+phase_0.dropna(inplace=True)
+phase_0[[1,2]].to_csv('output_files/$rsID.0.haps', header=False, index=False)
+
+phase_1 = phase[phase[0]==1]
+mapping = pd.read_csv("name2id_UKBB", sep=" ", header=None)
+phase_1[1] = phase_1[1].map(mapping.set_index(0)[2].to_dict())
+phase_1.dropna(inplace=True)
+phase_1[[1,2]].to_csv('output_files/$rsID.1.haps', header=False, index=False)
 END
 rm "$rsID"*

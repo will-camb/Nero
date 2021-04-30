@@ -23,12 +23,12 @@ class RunMsWithFsOutput:
         self.infile = infile
 
     def run(self):
-        #run simulation
+        #  run simulation
         tree_sequence = RunMsPrime(nhaps=self.nhaps, sample_times=self.sample_times, hg_mig_rate=self.hg_mig_rate,
                  length=self.length, mutation_rate=self.mutation_rate,
                  popnames=self.popnames, populations=self.populations, infile=self.infile).run_model()
 
-        # args for script
+        #  args for script
         parser = argparse.ArgumentParser()
         parser.add_argument("-out_ms",
                             help="Path and filename to save the tree sequence to e.g. Documents/msprimetest NB directory must already exist",
@@ -53,22 +53,22 @@ class RunMsWithFsOutput:
                 indnames.append(n)
                 indpopnames.append(self.popnames[i])
 
-        # pop_ids file
+        #  pop_ids file
         with open(os.path.join(path, "pop_ids"), "w") as file:
             for i in range(len(indnames)):
                 file.write(indnames[i] + " " + indpopnames[i] + " 1\n")
 
-        # phase_file
+        #  phase_file
         list_of_inds = [sample for sample in tree_sequence.samples()]
         number_of_inds = len(list_of_inds)
         listofsites = [math.floor(site.position) for site in tree_sequence.sites()]
         numsnps = len(listofsites)
-        # Ensure all site positions are unique
+        #  Ensure all site positions are unique
         while len(listofsites) != len(set(listofsites)):
             for i in range(1, len(listofsites)):
                 if listofsites[i] <= listofsites[i - 1]:
                     listofsites[i] = (listofsites[i - 1] + 1)
-        # Test if all site positions are unique, otherwise error message
+        #  Test if all site positions are unique, otherwise error message
         if len(listofsites) != len(set(listofsites)):
             print("Error: some SNPs have same location - need to edit")
         with open(os.path.join(path, "phasefile"), "w") as file:
@@ -81,7 +81,7 @@ class RunMsWithFsOutput:
             for hap in tree_sequence.haplotypes():
                 file.write(str(hap) + "\n")
 
-        # recomb_file
+        #  recomb_file
         print(
             "Need to run command to create cp input recomb file using recombination map used for msprime simulation. \
             Something like..."

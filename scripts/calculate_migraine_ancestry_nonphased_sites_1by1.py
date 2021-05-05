@@ -20,12 +20,11 @@ if not os.path.isfile("output_files/" + str(args.rsID) + ".hom.1.samples"):
     print("No valid samples file in directory output_files for " + str(args.rsID))
     sys.exit(0)
 
-if os.path.isfile("ancestry_plots/" + args.rsID + ".Yamnaya.1.snp.subset.csv"):
-    print("Already have ancestry plots for " + str(args.rsID))
-    sys.exit(0)
-
 for anc in ["CHG", "EHG", "Farmer", "African", "EastAsian", "WHG", "Yamnaya"]:
     print("Processing " + str(anc) + " for " + str(args.rsID))
+    if os.path.isfile("ancestry_plots/" + args.rsID + "." + str(anc) + ".1.snp.subset.csv"):
+        print("Already have ancestry plots for " + str(anc) + " for " + str(args.rsID))
+        continue
     cols = pd.read_csv("/willerslev/ukbiobank/painting_results_aggregate/copyprobs_per_anc/" + str(anc) + "." +
                        str(args.chr) + ".master_all_copyprobsperlocus.txt.gz", sep=" ", nrows=0).columns.tolist()
     del cols[0]

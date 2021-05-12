@@ -16,8 +16,25 @@ def analyse_anc(anc_copyprobs_temp, anc, chrom, pval, LD_value, phenotype_file):
         df.columns = ['haps', anc, 'phase']
 
         #  Check if the minor allele = alt allele
-        if GWAS_pruned.loc[GWAS_pruned['pos'] == i].minor_allele.item() == \
-                GWAS_pruned.loc[GWAS_pruned['pos'] == i].alt.item():
+
+        try:
+            minor_allele = GWAS_pruned.loc[GWAS_pruned['pos'] == i].minor_allele.item()
+        except ValueError:  # This skips SNPs with more then one entry in the GWAS file
+            print("ValueError for minor_allele for SNP at position " + str(i) + " for " + str(anc) + " chr" + str(chrom) + "!")
+            skipped_snps += 1
+            continue
+        try:
+            alt_allele = GWAS_pruned.loc[GWAS_pruned['pos'] == i].alt.item()
+        except ValueError:  # This skips SNPs with more then one entry in the GWAS file
+            print("ValueError for alt_allele for SNP at position " + str(i) + " for " + str(anc) + " chr" + str(chrom) + "!")
+            skipped_snps += 1
+            continue
+
+        # if GWAS_pruned.loc[GWAS_pruned['pos'] == i].minor_allele.empty or GWAS_pruned.loc[GWAS_pruned['pos'] == i].alt.empty:
+        #     print("Can't find minor/alt info for SNP " + str(i) + " for " + str(anc) + str(chrom))
+        #     skipped_snps += 1
+        #     continue
+        if minor_allele == alt_allele:
             #  minor is alt
             #  Find if minor is 1 or 0 in phase
             if df['phase'].sum() > (df.shape[0] / 2):

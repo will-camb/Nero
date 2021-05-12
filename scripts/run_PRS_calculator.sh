@@ -29,7 +29,7 @@ done
 echo "Now running commands in PRS_calculator_commands in parallel"
 shuf PRS_calculator_commands_temp > PRS_calculator_commands
 rm PRS_calculator_commands_temp
-cat PRS_calculator_commands | parallel  -j 40
+cat PRS_calculator_commands | parallel  -j 50
 
 echo "*** All done, results are in PRS_calculations ***"
 

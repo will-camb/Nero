@@ -14,26 +14,21 @@ def analyse_anc(anc_copyprobs_temp, anc, chrom, pval, LD_value, phenotype_file):
         phase_i = pd.DataFrame(zip(phase_temp.index, haps, phase_temp[str(i)]))
         df = pd.merge(anc_copyprobs_temp_i, phase_i, left_on=[0, 1], right_on=[0, 1]).set_index(0)
         df.columns = ['haps', anc, 'phase']
-
-        #  Check if the minor allele = alt allele
-
         try:
             minor_allele = GWAS_pruned.loc[GWAS_pruned['pos'] == i].minor_allele.item()
         except ValueError:  # This skips SNPs with more then one entry in the GWAS file
-            print("ValueError for minor_allele for SNP at position " + str(i) + " for " + str(anc) + " chr" + str(chrom) + "!")
+            print("ValueError for minor_allele for SNP at position " + str(i) + " for " + str(anc) + " chr" +
+                  str(chrom) + "! Skipping this SNP (probably because >1 entry in the GWAS file)")
             skipped_snps += 1
             continue
         try:
             alt_allele = GWAS_pruned.loc[GWAS_pruned['pos'] == i].alt.item()
         except ValueError:  # This skips SNPs with more then one entry in the GWAS file
-            print("ValueError for alt_allele for SNP at position " + str(i) + " for " + str(anc) + " chr" + str(chrom) + "!")
+            print("ValueError for alt_allele for SNP at position " + str(i) + " for " + str(anc) + " chr" +
+                  str(chrom) + "! Skipping this SNP (probably because >1 entry in the GWAS file)")
             skipped_snps += 1
             continue
-
-        # if GWAS_pruned.loc[GWAS_pruned['pos'] == i].minor_allele.empty or GWAS_pruned.loc[GWAS_pruned['pos'] == i].alt.empty:
-        #     print("Can't find minor/alt info for SNP " + str(i) + " for " + str(anc) + str(chrom))
-        #     skipped_snps += 1
-        #     continue
+        #  Check if the minor allele = alt allele
         if minor_allele == alt_allele:
             #  minor is alt
             #  Find if minor is 1 or 0 in phase
@@ -113,18 +108,18 @@ types_dict = {'0': str}
 types_dict.update({col: 'int8' for col in col_names if col not in types_dict})
 anc_copyprobs = pd.read_csv(str(args.copyprobs_file), sep=" ", dtype=types_dict)
 anc_copyprobs.set_index("0", inplace=True)
-anc_copyprobs.columns = anc_copyprobs.columns.tolist()[::-1]  # Reverse column names because they are mis-labelled
+anc_copyprobs.columns = anc_copyprobs.columns.tolist()[::-1]  # Reverse column names because they are mis-labelled;
+#  so when correct, column names are descending
 print("*** Successfully loaded copyprobs file for " + args.anc + " chr" + str(args.chr) + "***")
 
 # Read in idfile
 idfile = pd.read_csv(args.idfile, header=None, sep=" ", index_col=0)
-# idfile = idfile[~idfile.index.isin(idfile.tail(318).index.tolist())]
 
 # Read in phasefile
-# positions = anc_copyprobs.columns.tolist()[::-1]  # Is this re-mislabelling? Pretty sure yes
-positions = anc_copyprobs.columns.tolist()
+# positions = anc_copyprobs.columns.tolist()[::-1]  # Phasefile cols should be ascending
+# positions = anc_copyprobs.columns.tolist()
 phase = pd.read_csv(str(args.phasefile), header=None, sep=" ", dtype='int8')
-phase.columns = positions
+phase.columns = col_names  # Phasefile cols should be ascending
 phase.index = [val for val in idfile.index.unique().tolist() for _ in (0, 1)]
 haps = list()
 for h in range(int(phase.shape[0] / 2)):
@@ -170,5 +165,4 @@ for file in phenotypes:
 
 print("***Success! Now writing results to output file***")
 PRS_calculations = pd.DataFrame.from_records(results_list)
-# PRS_calculations = pd.DataFrame([anc_dict])
 PRS_calculations.to_csv('PRS_calculations', mode='a', header=False, index=False, sep=" ")

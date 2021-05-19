@@ -116,10 +116,8 @@ print("*** Successfully loaded copyprobs file for " + args.anc + " chr" + str(ar
 idfile = pd.read_csv(args.idfile, header=None, sep=" ", index_col=0)
 
 # Read in phasefile
-# positions = anc_copyprobs.columns.tolist()[::-1]  # Phasefile cols should be ascending
-# positions = anc_copyprobs.columns.tolist()
 phase = pd.read_csv(str(args.phasefile), header=None, sep=" ", dtype='int8')
-phase.columns = col_names  # Phasefile cols should be ascending
+phase.columns = anc_copyprobs.columns.tolist()[::-1]  # Phasefile cols should be ascending
 phase.index = [val for val in idfile.index.unique().tolist() for _ in (0, 1)]
 haps = list()
 for h in range(int(phase.shape[0] / 2)):

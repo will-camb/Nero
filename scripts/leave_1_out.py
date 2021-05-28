@@ -28,10 +28,10 @@ cols = [int(x) for x in cols]
 cols_reversed = cols[::-1]
 
 phaselist = [cols.index(x) for x in sites_list]  # Get index of columns from phasefile to include
-# phase = pd.read_csv("/willerslev/ukbiobank/painting_results_aggregate/phasefiles_transformed/" + str(args.chr) + ".merged.phase.gz", header=None, sep=" ", dtype='int8', usecols=phaselist)
-with open("/willerslev/ukbiobank/painting_results_aggregate/phasefiles_transformed/" + str(args.chr) + ".merged.phase.gz", 'rb') as fd:
-    gzip_fd = gzip.GzipFile(fileobj=fd)
-    phase = pd.read_csv(gzip_fd, header=None, sep=" ", dtype='int8', usecols=phaselist)
+phase = pd.read_csv("/willerslev/ukbiobank/painting_results_aggregate/phasefiles_transformed/" + str(args.chr) + ".merged.phase", header=None, sep=" ", dtype='int8', usecols=phaselist)
+# with open("/willerslev/ukbiobank/painting_results_aggregate/phasefiles_transformed/" + str(args.chr) + ".merged.phase.gz", 'rb') as fd:
+#     gzip_fd = gzip.GzipFile(fileobj=fd)
+#     phase = pd.read_csv(gzip_fd, header=None, sep=" ", dtype='int8', usecols=phaselist)
 # phase = pd.read_csv("/willerslev/ukbiobank/painting_results_split/split_24001-48000/phasefiles/transformed." + str(args.chr) +
 #                     ".merged.phase.gz", header=None, sep=" ", dtype='int8', usecols=phaselist)
 phase.columns = sites_list
@@ -39,6 +39,7 @@ phase.index = [val for val in idfile.index.unique().tolist() for _ in (0, 1)]
 haps = list()
 for h in range(int(phase.shape[0] / 2)):
     haps.extend([1, 2])
+phase["haps"] = haps
 
 wrong_right_map = pd.DataFrame(cols)
 wrong_right_map.loc[:, 1] = cols_reversed
@@ -48,10 +49,9 @@ cols_mapped = mapped_positions['Wrong'].tolist()
 types_dict = {'0': str}
 types_dict.update({str(col): 'int8' for col in cols_mapped if col not in types_dict})
 
-results_list = []
 results_dict = {}
-# for anc in ["CHG", "EHG", "Farmer", "African", "EastAsian", "WHG", "Yamnaya"]:
-for anc in ["Farmer", "Yamnaya"]:
+for anc in ["CHG", "EHG", "Farmer", "African", "EastAsian", "WHG", "Yamnaya"]:
+    results_list = []
     copyprobs = pd.read_csv("/willerslev/ukbiobank/painting_results_aggregate/copyprobs_per_anc/" + str(anc) + "." +
                             str(args.chr) + ".master_all_copyprobsperlocus.txt.gz",
                             sep=" ", dtype=types_dict, usecols=types_dict.keys())
@@ -60,10 +60,14 @@ for anc in ["Farmer", "Yamnaya"]:
     #                         sep=" ", dtype=types_dict, usecols=types_dict.keys())
     copyprobs.set_index("0", inplace=True)
     copyprobs.columns = sites_list
-    copyprobs["haps"] = haps
+    copyprobshaps = list()
+    for h in range(int(copyprobs.shape[0] / 2)):
+        copyprobshaps.extend([1, 2])
+    copyprobs["haps"] = copyprobshaps
+
     for i in sites_list:
-        phase_i = pd.DataFrame(zip(phase.index, haps, phase[i]))
-        anc_copyprobs_temp_i = pd.DataFrame(zip(copyprobs.index, haps, copyprobs[i]))
+        phase_i = pd.DataFrame(zip(phase.index, phase.haps, phase[i]))
+        anc_copyprobs_temp_i = pd.DataFrame(zip(copyprobs.index, copyprobs.haps, copyprobs[i]))
         df = pd.merge(anc_copyprobs_temp_i, phase_i, left_on=[0, 1], right_on=[0, 1]).set_index(0)
         df.columns = ['haps', anc, 'phase']
         if df.phase.sum() < 408884:

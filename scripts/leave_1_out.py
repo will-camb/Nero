@@ -1,7 +1,6 @@
 import pandas as pd
 import argparse
 import seaborn as sns
-import gzip
 
 sns.set(color_codes=True)
 
@@ -59,7 +58,7 @@ for anc in ["CHG", "EHG", "Farmer", "African", "EastAsian", "WHG", "Yamnaya"]:
     #                         str(args.chr) + ".master_all_copyprobsperlocus.txt.gz",
     #                         sep=" ", dtype=types_dict, usecols=types_dict.keys())
     copyprobs.set_index("0", inplace=True)
-    copyprobs.columns = sites_list
+    copyprobs.columns = mapped_positions['Right'].tolist()  # Columns need to be reversed here so descending
     copyprobshaps = list()
     for h in range(int(copyprobs.shape[0] / 2)):
         copyprobshaps.extend([1, 2])

@@ -121,7 +121,7 @@ for file in phenotypes:
         for LD in ["05.merged.filtered.prune.in", "5.merged.filtered.prune.in", "9.merged.filtered.prune.in"]:
             pruned_in = pd.read_csv(str(args.pruned_dir) + "/" + str(args.chr) + "." + str(LD), header=None)
             GWAS_pruned = GWAS_pval.loc[GWAS_pval['pos'].isin(pruned_in[0].astype(str).tolist())]
-            list_of_SNPs = GWAS_pruned['pos'].tolist()
+            list_of_SNPs = list(set(GWAS_pruned['pos'].unique()))
             phase_temp = phase[list_of_SNPs]
             phase_temp = phase_temp.reset_index().rename(columns={'index': 'ID'})
             phase_temp['haps'] = phase_haps

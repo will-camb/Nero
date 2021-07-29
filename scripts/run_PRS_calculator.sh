@@ -22,7 +22,7 @@ ancestries="CHG EHG Farmer African EastAsian WHG Yamnaya"
 
 for chr in $chrlist; do
   for anc in $ancestries; do
-    echo "python3 PRS_calculator_v2.py -copyprobs_file $copyprobs_directory/temp.$anc.$chr.master_all_copyprobsperlocus.txt.gz -phasefile $phasefile_directory/transformed.$chr.merged.phase.gz -idfile $idfile -phenotypes $phenotype_file -pruned_dir $pruned_dir -chr $chr -anc $anc" >> PRS_calculator_commands_temp
+    echo "python3 PRS_calculator_v3.py -copyprobs_file $copyprobs_directory/temp.$anc.$chr.master_all_copyprobsperlocus.txt.gz -phasefile $phasefile_directory/transformed.$chr.merged.phase.gz -idfile $idfile -phenotypes $phenotype_file -pruned_dir $pruned_dir -chr $chr -anc $anc" >> PRS_calculator_commands_temp
   done
 done
 
@@ -31,6 +31,6 @@ shuf PRS_calculator_commands_temp > PRS_calculator_commands
 rm PRS_calculator_commands_temp
 cat PRS_calculator_commands | parallel  -j 50
 
-echo "*** All done, results are in PRS_calculations_v2 ***"
+echo "*** All done, results are in PRS_calculations_v3 ***"
 
 rm PRS_calculator_commands

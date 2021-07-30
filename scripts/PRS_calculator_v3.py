@@ -102,7 +102,8 @@ variants = pd.read_csv("/willerslev/datasets/UKBiobank/NealeV2/variants.tsv.gz",
                        usecols=['variant', 'chr', 'alt'],
                        dtype={'variant': 'string', 'chr': 'string', 'alt': 'string'})
 variants = variants.loc[variants['chr'] == str(args.chr)]
-ldetect = pd.read_csv("/willerslev/ukbiobank/painting_results_aggregate/PRS_calculation/ldetect-data/EUR/fourier_ls-chr" + str(args.chr) + ".bed", sep='\t')
+ldetect = pd.read_csv("/willerslev/ukbiobank/painting_results_aggregate/PRS_calculation/ldetect-data/EUR/fourier_ls-chr"
+                      + str(args.chr) + ".bed", sep='\t')
 ldetect.rename(columns=lambda x: x.strip(), inplace=True)
 results_list = list()
 # LOOP through GWAS files
@@ -123,7 +124,8 @@ for file in phenotypes:
         block = GWAS_variants.loc[(GWAS_variants['pos'].astype(int) > row['start']) & (
                     GWAS_variants['pos'].astype(int) < row['stop'])].reset_index()
         try:
-            best_per_block.loc[index] = block.iloc[block.loc[block['pval'] < 0.01]['beta'].idxmax()]
+            block = block.loc[block['pval'] < 0.001].reset_index()
+            best_per_block.loc[index] = block.iloc[block['beta'].abs().idxmax()]
         except ValueError:  # For when there are no SNPs that pass p-val threshold in the block
             continue
     list_of_SNPs = list(set(best_per_block['pos'].tolist()))

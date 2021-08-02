@@ -142,7 +142,9 @@ for file in phenotypes:
     iterables = [["ID"] + list_of_SNPs, ["phase", "copyprobs"]]
     merged_phase_copyprobs.columns = pd.MultiIndex.from_product(iterables, names=['first', 'second'])
     merged_phase_copyprobs.set_index('ID', inplace=True)
-    analyse_anc(merged_phase_copyprobs, str(args.anc), args.chr, 0.01, file)
+    for i in range(1000):
+        temp = merged_phase_copyprobs.sample(n=merged_phase_copyprobs.shape[0], replace=True)
+        analyse_anc(temp, str(args.anc), args.chr, 0.01, file)
 
 print("***Success! Now writing results to output file***")
 if not os.path.exists("PRS_calculations_v3"):

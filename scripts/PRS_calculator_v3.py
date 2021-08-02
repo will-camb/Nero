@@ -3,7 +3,7 @@ import argparse
 import os
 
 
-def analyse_anc(merged_phase_copyprobs_temp, anc, chrom, pval, phenotype_file):
+def analyse_anc(merged_phase_copyprobs_temp, anc, chrom, pval, iter, phenotype_file):
     global list_of_SNPs
     skipped_snps = 0
     phase_sum = merged_phase_copyprobs_temp.loc[:, (slice(None), 'phase')].sum().tolist()
@@ -48,7 +48,7 @@ def analyse_anc(merged_phase_copyprobs_temp, anc, chrom, pval, phenotype_file):
     PRS = maf_GWAS['maf_x_beta'].sum()
     number_of_SNPs = len(list_of_SNPs)
     results_list.append(
-        [args.copyprobs_file, phenotype_file, anc, chrom, PRS, number_of_SNPs, skipped_snps, pval])
+        [args.copyprobs_file, phenotype_file, anc, chrom, PRS, number_of_SNPs, skipped_snps, pval, iter])
 
 
 parser = argparse.ArgumentParser()
@@ -144,10 +144,10 @@ for file in phenotypes:
     merged_phase_copyprobs.set_index('ID', inplace=True)
     for i in range(1000):
         temp = merged_phase_copyprobs.sample(n=merged_phase_copyprobs.shape[0], replace=True)
-        analyse_anc(temp, str(args.anc), args.chr, 0.01, file)
+        analyse_anc(temp, str(args.anc), args.chr, 0.01, i, file)
 
 print("***Success! Now writing results to output file***")
 if not os.path.exists("PRS_calculations_v3"):
-    open("PRS_calculations_v3", 'a').close()
+    open("PRS_calculations_bootstrapped_v3", 'a').close()
 PRS_calculations = pd.DataFrame.from_records(results_list)
-PRS_calculations.to_csv('PRS_calculations_v3', mode='a', header=False, index=False, sep=" ")
+PRS_calculations.to_csv('PRS_calculations_bootstrapped_v3', mode='a', header=False, index=False, sep=" ")

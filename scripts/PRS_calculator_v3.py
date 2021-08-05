@@ -119,32 +119,36 @@ for file in phenotypes:
     GWAS = GWAS.loc[GWAS['chr'] == str(args.chr)]
     GWAS = GWAS.loc[GWAS['pos'].isin(phase.columns.tolist())]  # NB about 80% of painted SNPs are in GWAS file
     GWAS_variants = pd.merge(variants[['variant', 'alt']], GWAS, on='variant')
-    best_per_block = pd.DataFrame(columns=GWAS_variants.columns)
-    for index, row in ldetect.iterrows():
-        block = GWAS_variants.loc[(GWAS_variants['pos'].astype(int) > row['start']) & (
-                    GWAS_variants['pos'].astype(int) < row['stop'])].reset_index()
-        try:
-            block = block.loc[block['pval'] < 0.001].reset_index()
-            best_per_block.loc[index] = block.iloc[block['beta'].abs().idxmax()]
-        except ValueError:  # For when there are no SNPs that pass p-val threshold in the block
+    for p in [0.0001, 0.001, 0.01]:
+        best_per_block = pd.DataFrame(columns=GWAS_variants.columns)
+        for index, row in ldetect.iterrows():
+            block = GWAS_variants.loc[(GWAS_variants['pos'].astype(int) > row['start']) & (
+                        GWAS_variants['pos'].astype(int) < row['stop'])].reset_index()
+            try:
+                block = block.loc[block['pval'] < p].reset_index()
+                best_per_block.loc[index] = block.iloc[block['beta'].abs().idxmax()]
+            except ValueError:  # For when there are no SNPs that pass p-val threshold in the block
+                continue
+        list_of_SNPs = list(set(best_per_block['pos'].tolist()))
+        if len(list_of_SNPs) == 0:
+            print("No SNPs pass p-val threshold for " + str(args.chr))
             continue
-    list_of_SNPs = list(set(best_per_block['pos'].tolist()))
-    phase_temp = phase[list_of_SNPs]
-    phase_temp = phase_temp.reset_index().rename(columns={'index': 'ID'})
-    phase_temp['haps'] = phase_haps
-    anc_copyprobs_temp = anc_copyprobs[list_of_SNPs]
-    anc_copyprobs_temp = anc_copyprobs_temp.reset_index().rename(columns={'0': 'ID'})
-    anc_copyprobs_temp['haps'] = copyprobs_haps
-    merged_phase_copyprobs = pd.merge(phase_temp, anc_copyprobs_temp, on=['ID', 'haps'])
-    reorder = [[str(x) + "_x", str(x) + "_y"] for x in list_of_SNPs]
-    reorder = [item for sublist in reorder for item in sublist]
-    merged_phase_copyprobs = merged_phase_copyprobs[['ID', 'haps'] + reorder]
-    iterables = [["ID"] + list_of_SNPs, ["phase", "copyprobs"]]
-    merged_phase_copyprobs.columns = pd.MultiIndex.from_product(iterables, names=['first', 'second'])
-    merged_phase_copyprobs.set_index('ID', inplace=True)
-    for i in range(1000):
-        temp = merged_phase_copyprobs.sample(n=merged_phase_copyprobs.shape[0], replace=True)
-        analyse_anc(temp, str(args.anc), args.chr, 0.01, i, file)
+        phase_temp = phase[list_of_SNPs]
+        phase_temp = phase_temp.reset_index().rename(columns={'index': 'ID'})
+        phase_temp['haps'] = phase_haps
+        anc_copyprobs_temp = anc_copyprobs[list_of_SNPs]
+        anc_copyprobs_temp = anc_copyprobs_temp.reset_index().rename(columns={'0': 'ID'})
+        anc_copyprobs_temp['haps'] = copyprobs_haps
+        merged_phase_copyprobs = pd.merge(phase_temp, anc_copyprobs_temp, on=['ID', 'haps'])
+        reorder = [[str(x) + "_x", str(x) + "_y"] for x in list_of_SNPs]
+        reorder = [item for sublist in reorder for item in sublist]
+        merged_phase_copyprobs = merged_phase_copyprobs[['ID', 'haps'] + reorder]
+        iterables = [["ID"] + list_of_SNPs, ["phase", "copyprobs"]]
+        merged_phase_copyprobs.columns = pd.MultiIndex.from_product(iterables, names=['first', 'second'])
+        merged_phase_copyprobs.set_index('ID', inplace=True)
+        for i in range(50):
+            temp = merged_phase_copyprobs.sample(n=merged_phase_copyprobs.shape[0], replace=True)
+            analyse_anc(temp, str(args.anc), args.chr, p, i, file)
 
 print("***Success! Now writing results to output file***")
 if not os.path.exists("PRS_calculations_v3"):

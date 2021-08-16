@@ -64,9 +64,6 @@ parser.add_argument("-idfile",
 parser.add_argument("-phenotypes",
                     help="File with list of phenotypes being looked at; NB extension must be .gz and not.bgz!",
                     required=True)
-parser.add_argument("-pruned_dir",
-                    help="Directory containing pruned.in files",
-                    required=True)
 parser.add_argument("-chr",
                     help="Chromosome number",
                     required=True)
@@ -153,7 +150,7 @@ for file in phenotypes:
             analyse_anc(temp, str(args.anc), args.chr, p, i, file)
 
 print("***Success! Now writing results to output file***")
-if not os.path.exists("PRS_calculations_bootstrapped_v3_" + args.copyprobs_file):
-    open("PRS_calculations_bootstrapped_v3_" + args.copyprobs_file, 'a').close()
+if not os.path.exists("PRS_calculations_bootstrapped_v3"):
+    open("PRS_calculations_bootstrapped_v3", 'a').close()
 PRS_calculations = pd.DataFrame.from_records(results_list)
-PRS_calculations.to_csv("PRS_calculations_bootstrapped_v3_" + args.copyprobs_file, mode='a', header=False, index=False, sep=" ")
+PRS_calculations.to_csv("PRS_calculations_bootstrapped_v3", mode='a', header=False, index=False, sep=" ")

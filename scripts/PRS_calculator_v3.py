@@ -119,14 +119,16 @@ for file in phenotypes:
     GWAS = GWAS.loc[GWAS['chr'] == str(args.chr)]
     GWAS = GWAS.loc[GWAS['pos'].isin(phase.columns.tolist())]  # NB about 80% of painted SNPs are in GWAS file
     GWAS_variants = pd.merge(variants[['variant', 'alt']], GWAS, on='variant')
-    for p in [0.0001, 0.001, 0.01]:
+    # for p in [0.0001, 0.001, 0.01]:
+    for p in [5e-8]:
         best_per_block = pd.DataFrame(columns=GWAS_variants.columns)
         for index, row in ldetect.iterrows():
             block = GWAS_variants.loc[(GWAS_variants['pos'].astype(int) > row['start']) & (
                         GWAS_variants['pos'].astype(int) < row['stop'])].reset_index()
             try:
                 block = block.loc[block['pval'] < p].reset_index()
-                best_per_block.loc[index] = block.iloc[block['beta'].abs().idxmax()]
+                # best_per_block.loc[index] = block.iloc[block['beta'].abs().idxmax()]  # Take highest beta
+                best_per_block.loc[index] = block.iloc[block['pval'].idxmin()]  # Take lowest p-val
             except ValueError:  # For when there are no SNPs that pass p-val threshold in the block
                 continue
         list_of_SNPs = list(set(best_per_block['pos'].tolist()))

@@ -73,8 +73,14 @@ parser.add_argument("-chr",
 parser.add_argument("-anc",
                     help="Ancestry being analysed",
                     required=True)
+parser.add_argument("-bootstrap",
+                    help="Whether to bootstrap or not; can take two values: True or False",
+                    required=True)
 args = parser.parse_args()
-
+if args.bootstrap == 'True':
+    bootstrap = True
+else:
+    bootstrap = False
 # Read in copyprobs
 col_names = pd.read_csv(str(args.copyprobs_file), sep=" ", nrows=0).columns
 types_dict = {'0': str}
@@ -149,9 +155,12 @@ for file in phenotypes:
         iterables = [["ID"] + list_of_SNPs, ["phase", "copyprobs"]]
         merged_phase_copyprobs.columns = pd.MultiIndex.from_product(iterables, names=['first', 'second'])
         merged_phase_copyprobs.set_index('ID', inplace=True)
-        for bootstrap in range(50):
-            temp = merged_phase_copyprobs.sample(n=merged_phase_copyprobs.shape[0], replace=True)
-            analyse_anc(temp, str(args.anc), args.chr, p, bootstrap, file)
+        if bootstrap:
+            for bs in range(50):
+                temp = merged_phase_copyprobs.sample(n=merged_phase_copyprobs.shape[0], replace=True)
+                analyse_anc(temp, str(args.anc), args.chr, p, bootstrap, file)
+        else:
+            analyse_anc(merged_phase_copyprobs, str(args.anc), args.chr, p, bootstrap, file)
 
 print("***Success! Now writing results to output file***")
 if not os.path.exists("PRS_calculations_bootstrapped_v3_" + str(args.phenotypes)):

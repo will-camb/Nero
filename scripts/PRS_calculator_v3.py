@@ -3,7 +3,7 @@ import argparse
 import os
 
 
-def analyse_anc(merged_phase_copyprobs_temp, anc, chrom, pval, iter, phenotype_file):
+def analyse_anc(merged_phase_copyprobs_temp, anc, chrom, pval, iteration, phenotype_file):
     global list_of_SNPs
     skipped_snps = 0
     phase_sum = merged_phase_copyprobs_temp.loc[:, (slice(None), 'phase')].sum().tolist()
@@ -36,8 +36,10 @@ def analyse_anc(merged_phase_copyprobs_temp, anc, chrom, pval, iter, phenotype_f
                 alt_mapping[i] = 1
             else:
                 alt_mapping[i] = 0
-        alt_sum = merged_phase_copyprobs_temp.loc[merged_phase_copyprobs_temp[i]['phase'] == alt_mapping[i]].loc[:, (i, 'copyprobs')].sum()
-        ref_sum = merged_phase_copyprobs_temp.loc[merged_phase_copyprobs_temp[i]['phase'] != alt_mapping[i]].loc[:, (i, 'copyprobs')].sum()
+        alt_sum = merged_phase_copyprobs_temp.loc[merged_phase_copyprobs_temp[i]['phase'] == alt_mapping[i]].loc[:,
+                  (i, 'copyprobs')].sum()
+        ref_sum = merged_phase_copyprobs_temp.loc[merged_phase_copyprobs_temp[i]['phase'] != alt_mapping[i]].loc[:,
+                  (i, 'copyprobs')].sum()
         output.at[i, 'alt'] = alt_sum
         output.at[i, 'ref'] = ref_sum
     output['maf'] = output['alt'] / (output['alt'] + output['ref'])
@@ -48,7 +50,8 @@ def analyse_anc(merged_phase_copyprobs_temp, anc, chrom, pval, iter, phenotype_f
     PRS = maf_GWAS['maf_x_beta'].sum()
     number_of_SNPs = len(list_of_SNPs)
     results_list.append(
-        [args.copyprobs_file, phenotype_file, anc, chrom, PRS, number_of_SNPs, skipped_snps, pval, iter])
+        [args.copyprobs_file, phenotype_file, anc, chrom, PRS, number_of_SNPs, skipped_snps, pval, iteration,
+         maf_GWAS['maf'].tolist(), maf_GWAS['beta'].tolist()])
 
 
 parser = argparse.ArgumentParser()
@@ -118,20 +121,21 @@ for file in phenotypes:
     GWAS_variants = pd.merge(variants[['variant', 'alt']], GWAS, on='variant')
     # for p in [0.0001, 0.001, 0.01]:
     for p in [5e-8]:
+        GWAS_variants_pval = GWAS_variants.loc[GWAS_variants['pval'] < p]
+        if GWAS_variants_pval.empty:
+            print("No SNPs pass p-val threshold for " + str(args.chr))
+            continue
         best_per_block = pd.DataFrame(columns=GWAS_variants.columns)
         for index, row in ldetect.iterrows():
-            block = GWAS_variants.loc[(GWAS_variants['pos'].astype(int) > row['start']) & (
-                        GWAS_variants['pos'].astype(int) < row['stop'])].reset_index()
+            block = GWAS_variants_pval.loc[(GWAS_variants_pval['pos'].astype(int) >= row['start']) & (
+                    GWAS_variants_pval['pos'].astype(int) < row['stop'])].reset_index()
             try:
-                block = block.loc[block['pval'] < p].reset_index()
+                block = block.reset_index()
                 # best_per_block.loc[index] = block.iloc[block['beta'].abs().idxmax()]  # Take highest beta
                 best_per_block.loc[index] = block.iloc[block['pval'].idxmin()]  # Take lowest p-val
             except ValueError:  # For when there are no SNPs that pass p-val threshold in the block
                 continue
-        list_of_SNPs = list(set(best_per_block['pos'].tolist()))
-        if len(list_of_SNPs) == 0:
-            print("No SNPs pass p-val threshold for " + str(args.chr))
-            continue
+        list_of_SNPs = best_per_block['pos'].drop_duplicates().tolist()
         phase_temp = phase[list_of_SNPs]
         phase_temp = phase_temp.reset_index().rename(columns={'index': 'ID'})
         phase_temp['haps'] = phase_haps
@@ -145,12 +149,13 @@ for file in phenotypes:
         iterables = [["ID"] + list_of_SNPs, ["phase", "copyprobs"]]
         merged_phase_copyprobs.columns = pd.MultiIndex.from_product(iterables, names=['first', 'second'])
         merged_phase_copyprobs.set_index('ID', inplace=True)
-        for i in range(50):
+        for bootstrap in range(50):
             temp = merged_phase_copyprobs.sample(n=merged_phase_copyprobs.shape[0], replace=True)
-            analyse_anc(temp, str(args.anc), args.chr, p, i, file)
+            analyse_anc(temp, str(args.anc), args.chr, p, bootstrap, file)
 
 print("***Success! Now writing results to output file***")
 if not os.path.exists("PRS_calculations_bootstrapped_v3_" + str(args.phenotypes)):
     open("PRS_calculations_bootstrapped_v3_" + str(args.phenotypes), 'a').close()
 PRS_calculations = pd.DataFrame.from_records(results_list)
-PRS_calculations.to_csv("PRS_calculations_bootstrapped_v3_" + str(args.phenotypes), mode='a', header=False, index=False, sep=" ")
+PRS_calculations.to_csv("PRS_calculations_bootstrapped_v3_" + str(args.phenotypes), mode='a', header=False, index=False,
+                        sep=" ")

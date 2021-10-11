@@ -1,3 +1,3 @@
 # Nero
 
-This repository is used for PhD work on the evolution of genetic diseases in European populations over the last 10,000 years. It is named after a cat, not the emperor.
+This repository is used for ongoing PhD work on ancestral contributions to modern complex phenotypes in the UK Biobank. It is named after a cat, not the emperor.

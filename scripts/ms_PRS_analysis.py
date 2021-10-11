@@ -2,7 +2,6 @@ import pandas as pd
 import argparse
 import os
 import numpy as np
-import math
 
 
 def analyse_anc(merged_phase_copyprobs_temp, anc, chrom, pval, iteration, phenotype_file):

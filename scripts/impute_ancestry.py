@@ -1,6 +1,7 @@
 import pandas as pd
 import argparse
 from pathlib import Path
+import sys
 pd.options.mode.chained_assignment = None
 
 parser = argparse.ArgumentParser()
@@ -38,6 +39,9 @@ def impute(impute_snp_list_):
 
 
 Path("imputed/").mkdir(parents=True, exist_ok=True)
+if Path("imputed/temp." + str(args.anc) + "." + str(args.chr) + ".master_all_copyprobsperlocus.txt.gz").is_file():
+    print("temp." + str(args.anc) + "." + str(args.chr) + ".master_all_copyprobsperlocus.txt.gz already imputed")
+    sys.exit()
 col_names = pd.read_csv(str(args.copyprobs_file), sep=" ", nrows=0).columns
 types_dict = {'0': str}
 types_dict.update({col: 'int8' for col in col_names if col not in types_dict})
@@ -49,6 +53,7 @@ painted_snp_list = anc_copyprobs.columns.astype(int).tolist()
 impute_snps = pd.read_csv(args.snp_file)
 impute_snps = impute_snps.loc[impute_snps.iloc[:, 0] == int(args.chr)]
 impute_snp_list = impute_snps.iloc[:, 1].tolist()
+impute_snp_list = list(set(impute_snp_list))
 impute_snp_list.sort(reverse=True)
 imputed_snps = impute(impute_snp_list)
 imputed_snps.columns = imputed_snps.columns.tolist()[::-1]  # Reverse column names to incorrect order for other scripts

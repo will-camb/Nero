@@ -51,4 +51,4 @@ impute_snps = impute_snps.loc[impute_snps.iloc[:, 0] == int(args.chr)]
 impute_snp_list = impute_snps.iloc[:, 1].tolist()
 impute_snp_list.sort(reverse=True)
 imputed_snps = impute(impute_snp_list)
-imputed_snps.to_csv("imputed/" + str(args.anc) + "_" + str(args.chr) + "_imputed.csv")  # NB col names saved correctly!
+imputed_snps.to_csv("imputed/temp." + str(args.anc) + "." + str(args.chr) + ".master_all_copyprobsperlocus.txt.gz")  # NB col names saved correctly!

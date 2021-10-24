@@ -53,6 +53,7 @@ def analyse_anc_phased(merged_phase_copyprobs_temp, anc, chrom, pval, iteration,
                 samples_0 = pd.read_csv(args.output_files + str(rsid) + ".hom.0.samples", header=None)
                 samples_1 = pd.read_csv(args.output_files + str(rsid) + ".hom.1.samples", header=None)
             except (ValueError, IOError):
+                skipped_snps += 1
                 print("Couldn't find rsID/output file for position:" + str(i) + ", so skipping")
                 continue
             anc_copyprobs_temp_i = anc_copyprobs_temp[['ID', str(i)]]

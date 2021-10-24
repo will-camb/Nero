@@ -6,18 +6,20 @@ import numpy as np
 
 def analyse_anc_phased(merged_phase_copyprobs_temp, anc, chrom, pval, iteration, phenotype_file):
     global list_of_SNPs
+    global list_of_SNPs_phase
     global rsID_mapping
     global anc_copyprobs_temp
     skipped_snps = 0
-    phase_sum = merged_phase_copyprobs_temp.loc[:, (slice(None), 'phase')].sum().tolist()
-    phase_sum_dict = {}
-    for n, i in enumerate(list_of_SNPs):
-        phase_sum_dict[i] = phase_sum[n]
+    if len(list_of_SNPs_phase) != 0:
+        phase_sum = merged_phase_copyprobs_temp.loc[:, (slice(None), 'phase')].sum().tolist()
+        phase_sum_dict = {}
+        for n, i in enumerate(list_of_SNPs_phase):
+            phase_sum_dict[i] = phase_sum[n]
     alt_mapping = {}
     output = pd.DataFrame(index=list_of_SNPs, columns=['alt', 'ref'])
     for i in list_of_SNPs:
-        if i in phase.columns.tolist():  # for phased snps
-            print(str(i) + " is phased and painted (in phasefile")
+        if str(i) in list_of_SNPs_phase:  # for phased snps
+            print(str(i) + " is phased and painted (in phasefile)")
             EUR_maf = GWAS_variants.loc[GWAS_variants['POS (hg19)'] == i].EUR.item()
             #  Check if alt/effect allele is major or minor
             if EUR_maf == -1:  # For all of these, alt/effect=minor
@@ -46,10 +48,14 @@ def analyse_anc_phased(merged_phase_copyprobs_temp, anc, chrom, pval, iteration,
         else:  # for non-phased snps
             print(str(i) + " is not phased, so looking at homozygous individuals")
             EUR_maf = GWAS_variants.loc[GWAS_variants['POS (hg19)'] == i].EUR.item()
-            rsid = rsID_mapping.loc[rsID_mapping['Position'] == i]["rsID"].item()
-            samples_0 = pd.read_csv(args.output_files + str(rsid) + "hom.0.samples", header=None)
-            samples_1 = pd.read_csv(args.output_files + str(rsid) + "hom.1.samples", header=None)
-            anc_copyprobs_temp_i = anc_copyprobs_temp[['ID, i']]
+            try:
+                rsid = rsID_mapping.loc[rsID_mapping['Position'] == int(i)]["rsID"].item()
+                samples_0 = pd.read_csv(args.output_files + str(rsid) + ".hom.0.samples", header=None)
+                samples_1 = pd.read_csv(args.output_files + str(rsid) + ".hom.1.samples", header=None)
+            except (ValueError, IOError):
+                print("Couldn't find rsID/output file for position:" + str(i) + ", so skipping")
+                continue
+            anc_copyprobs_temp_i = anc_copyprobs_temp[['ID', str(i)]]
             if EUR_maf == -1:  # For all of these, alt/effect=minor
                 if samples_0.shape[0] < (len(copyprobs_haps) / 8):
                     alt_mapping[i] = 0
@@ -72,8 +78,8 @@ def analyse_anc_phased(merged_phase_copyprobs_temp, anc, chrom, pval, iteration,
             elif alt_mapping[i] == 1:
                 alt_sum = anc_copyprobs_temp_i.loc[anc_copyprobs_temp_i['ID'].isin(samples_1[0].tolist())][i].sum()
                 ref_sum = anc_copyprobs_temp_i.loc[anc_copyprobs_temp_i['ID'].isin(samples_0[0].tolist())][i].sum()
-        output.at[i, 'alt'] = alt_sum
-        output.at[i, 'ref'] = ref_sum
+            output.at[i, 'alt'] = alt_sum
+            output.at[i, 'ref'] = ref_sum
     output['maf'] = output['alt'] / (output['alt'] + output['ref'])
     output['maf'] = output['maf'].fillna(0)
     output = output.reset_index().rename(columns={'index': 'pos'})
@@ -86,10 +92,6 @@ def analyse_anc_phased(merged_phase_copyprobs_temp, anc, chrom, pval, iteration,
         [args.copyprobs_file_imputed, phenotype_file, anc, chrom, PRS, number_of_SNPs, skipped_snps, pval, iteration,
          maf_GWAS['maf'].tolist(), maf_GWAS['beta'].tolist(), list_of_SNPs])
 
-
-def analyse_anc_nonphased():
-    global list_of_SNPs
-    skipped_snps = 0
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-copyprobs_file_original",
@@ -155,14 +157,17 @@ ldetect = pd.read_csv("/willerslev/ukbiobank/painting_results_aggregate/PRS_calc
                       + str(args.chr) + ".bed", sep='\t')
 ldetect.rename(columns=lambda x: x.strip(), inplace=True)
 rsID_mapping = pd.read_csv("ms_all_snps_rsids_annotated.csv")
-rsID_mapping = rsID_mapping.loc[rsID_mapping['chr'].astype(int) == args.chr]
+rsID_mapping = rsID_mapping.loc[rsID_mapping['chr'].astype(int) == int(args.chr)]
+print(rsID_mapping.shape)
 results_list = list()
 # LOOP through GWAS files
 phenotypes = pd.read_csv(args.phenotypes, header=None, dtype=str)[0].tolist()
 phenotypes = [s.strip() for s in phenotypes]
 for file in phenotypes:
     print("***Looking at " + str(file) + "***")
-    GWAS_variants = variants.loc[variants['POS (hg19)'].isin(phase.columns.tolist())]
+    GWAS_variants = variants
+    print(GWAS_variants.shape)
+    # GWAS_variants = variants.loc[variants['POS (hg19)'].isin(phase.columns.tolist())]
     if GWAS_variants.empty:
         print("GWAS_variants is empty!")
         continue
@@ -182,17 +187,21 @@ for file in phenotypes:
             except ValueError:  # For when there are no SNPs that pass p-val threshold in the block
                 continue
         list_of_SNPs = best_per_block['POS (hg19)'].drop_duplicates().tolist()
-        phase_temp = phase[list_of_SNPs]
+        print(len(list_of_SNPs))
+        phase_temp = phase.loc[:, phase.columns.intersection([str(x) for x in list_of_SNPs])]
+        list_of_SNPs_phase = phase_temp.columns.tolist()
+        print(len(list_of_SNPs_phase))
         phase_temp = phase_temp.reset_index().rename(columns={'index': 'ID'})
         phase_temp['haps'] = phase_haps
         anc_copyprobs_temp = anc_copyprobs[list_of_SNPs]
         anc_copyprobs_temp = anc_copyprobs_temp.reset_index().rename(columns={'0': 'ID'})
+        print(anc_copyprobs_temp.shape)
         anc_copyprobs_temp['haps'] = copyprobs_haps
         merged_phase_copyprobs = pd.merge(phase_temp, anc_copyprobs_temp, on=['ID', 'haps'])
-        reorder = [[str(x) + "_x", str(x) + "_y"] for x in list_of_SNPs]
+        reorder = [[str(x) + "_x", str(x) + "_y"] for x in list_of_SNPs_phase]
         reorder = [item for sublist in reorder for item in sublist]
         merged_phase_copyprobs = merged_phase_copyprobs[['ID', 'haps'] + reorder]
-        iterables = [["ID"] + list_of_SNPs, ["phase", "copyprobs"]]
+        iterables = [["ID"] + list_of_SNPs_phase, ["phase", "copyprobs"]]
         merged_phase_copyprobs.columns = pd.MultiIndex.from_product(iterables, names=['first', 'second'])
         merged_phase_copyprobs.set_index('ID', inplace=True)
         if bootstrap:

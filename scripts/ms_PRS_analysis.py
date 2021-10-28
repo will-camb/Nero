@@ -20,7 +20,13 @@ def analyse_anc_phased(merged_phase_copyprobs_temp, anc, chrom, pval, iteration,
     for i in list_of_SNPs:
         if str(i) in list_of_SNPs_phase:  # for phased snps
             print(str(i) + " is phased and painted (in phasefile)")
-            EUR_maf = GWAS_variants.loc[GWAS_variants['POS (hg19)'] == i].EUR.item()
+            try:
+                EUR_maf = GWAS_variants.loc[GWAS_variants['POS (hg19)'] == i].EUR.item()
+            except ValueError:
+                skipped_snps += 1
+                list_of_SNPs.remove(i)
+                print("Couldn't find EUR_maf for position:" + str(i) + ", so skipping")
+                continue
             #  Check if alt/effect allele is major or minor
             if EUR_maf == -1:  # For all of these, alt/effect=minor
                 if phase_sum_dict[i] > (len(copyprobs_haps) / 2):
@@ -47,14 +53,15 @@ def analyse_anc_phased(merged_phase_copyprobs_temp, anc, chrom, pval, iteration,
             output.at[i, 'ref'] = ref_sum
         else:  # for non-phased snps
             print(str(i) + " is not phased, so looking at homozygous individuals")
-            EUR_maf = GWAS_variants.loc[GWAS_variants['POS (hg19)'] == i].EUR.item()
             try:
+                EUR_maf = GWAS_variants.loc[GWAS_variants['POS (hg19)'] == i].EUR.item()
                 rsid = rsID_mapping.loc[rsID_mapping['Position'] == int(i)]["rsID"].item()
                 samples_0 = pd.read_csv(args.output_files + str(rsid) + ".hom.0.samples", header=None)
                 samples_1 = pd.read_csv(args.output_files + str(rsid) + ".hom.1.samples", header=None)
             except (ValueError, IOError):
                 skipped_snps += 1
-                print("Couldn't find rsID/output file for position:" + str(i) + ", so skipping")
+                list_of_SNPs.remove(i)
+                print("Couldn't find rsID/EUR_maf/output file for position:" + str(i) + ", so skipping")
                 continue
             anc_copyprobs_temp_i = anc_copyprobs_temp[['ID', str(i)]]
             if EUR_maf == -1:  # For all of these, alt/effect=minor
@@ -144,7 +151,8 @@ print("*** Successfully loaded copyprobs file for " + args.anc + " chr" + str(ar
 idfile = pd.read_csv(args.idfile, header=None, sep=" ", index_col=0)
 # Read in phasefile
 phase = pd.read_csv(str(args.phasefile), header=None, sep=" ", dtype='int8')
-phase.columns = pd.read_csv(str(args.copyprobs_file_original), sep=" ", nrows=0).columns.tolist()[1:]  # Phasefile cols should be ascending
+phase.columns = pd.read_csv(str(args.copyprobs_file_original), sep=" ", nrows=0).columns.tolist()[1:]
+# Phasefile cols should be ascending
 phase.index = [val for val in idfile.index.unique().tolist() for _ in (0, 1)]
 phase_haps = list()
 for h in range(int(phase.shape[0] / 2)):
@@ -177,6 +185,18 @@ for file in phenotypes:
         if GWAS_variants_pval.empty:
             print("No SNPs pass p-val threshold for " + str(args.chr))
             continue
+        #  Drop SNPs from GWAS_variants that are neither painted or imputed
+        for index, row in GWAS_variants.iterrows():
+            try:
+                rsID = rsID_mapping.loc[rsID_mapping['Position']==row['POS (hg19)']]['rsID'].item()
+            except ValueError:
+                GWAS_variants.drop(index, inplace=True)  # For SNPs with no rsID found
+                continue
+            if not row['POS (hg19)'].isin(anc_copyprobs.columns.tolist()):  # Check dtypes!
+                if not os.path.exists("/willerslev/ukbiobank/painting_results_aggregate/PRS_calculation/"
+                                      "multiple_sclerosis/non_phased_snps/output_files/" + rsID + ".hom.1.samples"):
+                    GWAS_variants.drop(index, inplace=True)
+        GWAS_variants.reset_index(inplace=True)
         best_per_block = pd.DataFrame(columns=GWAS_variants.columns)
         for index, row in ldetect.iterrows():
             block = GWAS_variants_pval.loc[(GWAS_variants_pval['POS (hg19)'].astype(int) >= row['start']) & (

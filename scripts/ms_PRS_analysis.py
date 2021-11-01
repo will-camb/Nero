@@ -151,6 +151,7 @@ print("*** Successfully loaded copyprobs file for " + args.anc + " chr" + str(ar
 idfile = pd.read_csv(args.idfile, header=None, sep=" ", index_col=0)
 # Read in phasefile
 phase = pd.read_csv(str(args.phasefile), header=None, sep=" ", dtype='int8')
+print("*** Successfully loaded phasefile file for " + args.anc + " chr" + str(args.chr) + "***")
 phase.columns = pd.read_csv(str(args.copyprobs_file_original), sep=" ", nrows=0).columns.tolist()[1:]
 # Phasefile cols should be ascending
 phase.index = [val for val in idfile.index.unique().tolist() for _ in (0, 1)]
@@ -182,22 +183,26 @@ for file in phenotypes:
         continue
     for p in [5e-8]:
         GWAS_variants_pval = GWAS_variants.loc[GWAS_variants['P (joined)'] < p]
+        print(GWAS_variants_pval.shape)
         if GWAS_variants_pval.empty:
             print("No SNPs pass p-val threshold for " + str(args.chr))
             continue
-        #  Drop SNPs from GWAS_variants that are neither painted or imputed
-        for index, row in GWAS_variants.iterrows():
-            try:
-                rsID = rsID_mapping.loc[rsID_mapping['Position']==row['POS (hg19)']]['rsID'].item()
-            except ValueError:
-                GWAS_variants.drop(index, inplace=True)  # For SNPs with no rsID found
-                continue
-            if not row['POS (hg19)'].isin(anc_copyprobs.columns.tolist()):  # Check dtypes!
+        for index, row in GWAS_variants_pval.iterrows():
+            # Drop SNPs from GWAS_variants that are neither painted or imputed
+            if not row['POS (hg19)'] in anc_copyprobs.columns.tolist():  # Check dtypes! POS is string!
+                try:
+                    rsID = rsID_mapping.loc[rsID_mapping['Position'] == int(row['POS (hg19)'])]['rsID'].item()
+                except ValueError:
+                    print(str(row['POS (hg19)']) + " has not been painted, and can't find rsID info... skipping")
+                    GWAS_variants.drop(index, inplace=True)  # For SNPs with no rsID found
+                    continue
                 if not os.path.exists("/willerslev/ukbiobank/painting_results_aggregate/PRS_calculation/"
                                       "multiple_sclerosis/non_phased_snps/output_files/" + rsID + ".hom.1.samples"):
-                    GWAS_variants.drop(index, inplace=True)
-        GWAS_variants.reset_index(inplace=True)
-        best_per_block = pd.DataFrame(columns=GWAS_variants.columns)
+                    print(str(row['POS (hg19)']) + " has not been painted/imputed, so skipping")
+                    GWAS_variants_pval.drop(index, inplace=True)
+        GWAS_variants_pval.reset_index(inplace=True, drop=True)
+        print(GWAS_variants_pval.shape)
+        best_per_block = pd.DataFrame(columns=GWAS_variants_pval.columns)
         for index, row in ldetect.iterrows():
             block = GWAS_variants_pval.loc[(GWAS_variants_pval['POS (hg19)'].astype(int) >= row['start']) & (
                     GWAS_variants_pval['POS (hg19)'].astype(int) < row['stop'])].reset_index()
@@ -209,6 +214,7 @@ for file in phenotypes:
                 continue
         list_of_SNPs = best_per_block['POS (hg19)'].drop_duplicates().tolist()
         print(len(list_of_SNPs))
+        print(list_of_SNPs)
         phase_temp = phase.loc[:, phase.columns.intersection([str(x) for x in list_of_SNPs])]
         list_of_SNPs_phase = phase_temp.columns.tolist()
         print(len(list_of_SNPs_phase))

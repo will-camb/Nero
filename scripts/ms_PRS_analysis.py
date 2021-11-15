@@ -129,20 +129,35 @@ parser.add_argument("-anc",
 parser.add_argument("-bootstrap",
                     help="Whether to bootstrap or not; can take two values: True or False",
                     required=True)
+parser.add_argument("-reverse_cols",
+                    help="Whether to reverse column names; can take two values: True or False. NB this refers to "
+                         "copyprobs_file_original AND copyprobs_file_imputed",
+                    required=True)
 args = parser.parse_args()
 if args.bootstrap == 'True':
     bootstrap = True
 else:
     bootstrap = False
+if args.reverse_cols == 'True':
+    reverse_cols = True
+else:
+    reverse_cols = False
 
 # Read in copyprobs
-col_names = pd.read_csv(str(args.copyprobs_file_imputed), sep=" ", nrows=0).columns
-types_dict = {'0': str}
-types_dict.update({col: 'float' for col in col_names if col not in types_dict})
-anc_copyprobs = pd.read_csv(str(args.copyprobs_file_imputed), sep=" ", dtype=types_dict)
-anc_copyprobs.set_index("0", inplace=True)
-anc_copyprobs.columns = anc_copyprobs.columns.tolist()[::-1]  # Reverse column names because they are mis-labelled;
+if reverse_cols:  # For copyprobs files with incorrectly ordered columns
+    col_names = pd.read_csv(str(args.copyprobs_file_imputed), sep=" ", nrows=0).columns
+    types_dict = {'0': str}
+    types_dict.update({col: 'float' for col in col_names if col not in types_dict})
+    anc_copyprobs = pd.read_csv(str(args.copyprobs_file_imputed), sep=" ", dtype=types_dict)
+    anc_copyprobs.set_index("0", inplace=True)
+    anc_copyprobs.columns = anc_copyprobs.columns.tolist()[::-1]  # Reverse column names because they are mis-labelled;
 #  so when correct, column names are descending
+else:  # For correctly labelled cols in copyprobs:
+    col_names = pd.read_csv(str(args.copyprobs_file_imputed), sep=" ", nrows=0).columns
+    types_dict = {'ID': str}
+    types_dict.update({col: 'float' for col in col_names if col not in types_dict})
+    anc_copyprobs = pd.read_csv(str(args.copyprobs_file_imputed), sep=" ", dtype=types_dict)
+    anc_copyprobs.set_index("ID", inplace=True)
 copyprobs_haps = list()
 for h in range(int(anc_copyprobs.shape[0] / 2)):
     copyprobs_haps.extend([1, 2])
@@ -152,7 +167,10 @@ idfile = pd.read_csv(args.idfile, header=None, sep=" ", index_col=0)
 # Read in phasefile
 phase = pd.read_csv(str(args.phasefile), header=None, sep=" ", dtype='int8')
 print("*** Successfully loaded phasefile file for " + args.anc + " chr" + str(args.chr) + "***")
-phase.columns = pd.read_csv(str(args.copyprobs_file_original), sep=" ", nrows=0).columns.tolist()[1:]
+if reverse_cols:
+    phase.columns = pd.read_csv(str(args.copyprobs_file_original), sep=" ", nrows=0).columns.tolist()[1:]
+else:
+    phase.columns = pd.read_csv(str(args.copyprobs_file_original), sep=" ", nrows=0).columns.tolist()[1:][::-1]
 # Phasefile cols should be ascending
 phase.index = [val for val in idfile.index.unique().tolist() for _ in (0, 1)]
 phase_haps = list()
@@ -168,7 +186,6 @@ ldetect = pd.read_csv("/willerslev/ukbiobank/painting_results_aggregate/PRS_calc
 ldetect.rename(columns=lambda x: x.strip(), inplace=True)
 rsID_mapping = pd.read_csv("ms_all_snps_rsids_annotated.csv")
 rsID_mapping = rsID_mapping.loc[rsID_mapping['chr'].astype(int) == int(args.chr)]
-print(rsID_mapping.shape)
 results_list = list()
 # LOOP through GWAS files
 phenotypes = pd.read_csv(args.phenotypes, header=None, dtype=str)[0].tolist()
@@ -176,32 +193,32 @@ phenotypes = [s.strip() for s in phenotypes]
 for file in phenotypes:
     print("***Looking at " + str(file) + "***")
     GWAS_variants = variants
-    print(GWAS_variants.shape)
     # GWAS_variants = variants.loc[variants['POS (hg19)'].isin(phase.columns.tolist())]
     if GWAS_variants.empty:
         print("GWAS_variants is empty!")
         continue
     for p in [5e-8]:
         GWAS_variants_pval = GWAS_variants.loc[GWAS_variants['P (joined)'] < p]
-        print(GWAS_variants_pval.shape)
         if GWAS_variants_pval.empty:
             print("No SNPs pass p-val threshold for " + str(args.chr))
             continue
         for index, row in GWAS_variants_pval.iterrows():
             # Drop SNPs from GWAS_variants that are neither painted or imputed
-            if not row['POS (hg19)'] in anc_copyprobs.columns.tolist():  # Check dtypes! POS is string!
+            if row['POS (hg19)'] not in phase.columns.tolist():  # Check dtypes! POS is string!
                 try:
                     rsID = rsID_mapping.loc[rsID_mapping['Position'] == int(row['POS (hg19)'])]['rsID'].item()
                 except ValueError:
                     print(str(row['POS (hg19)']) + " has not been painted, and can't find rsID info... skipping")
                     GWAS_variants.drop(index, inplace=True)  # For SNPs with no rsID found
                     continue
-                if not os.path.exists("/willerslev/ukbiobank/painting_results_aggregate/PRS_calculation/"
-                                      "multiple_sclerosis/non_phased_snps/output_files/" + rsID + ".hom.1.samples"):
+                if os.path.isfile(args.output_files + rsID + ".hom.1.samples"):
+                    continue
+                else:
                     print(str(row['POS (hg19)']) + " has not been painted/imputed, so skipping")
                     GWAS_variants_pval.drop(index, inplace=True)
         GWAS_variants_pval.reset_index(inplace=True, drop=True)
         print(GWAS_variants_pval.shape)
+        # print(GWAS_variants_pval['POS (hg19'].tolist())
         best_per_block = pd.DataFrame(columns=GWAS_variants_pval.columns)
         for index, row in ldetect.iterrows():
             block = GWAS_variants_pval.loc[(GWAS_variants_pval['POS (hg19)'].astype(int) >= row['start']) & (
@@ -214,10 +231,8 @@ for file in phenotypes:
                 continue
         list_of_SNPs = best_per_block['POS (hg19)'].drop_duplicates().tolist()
         print(len(list_of_SNPs))
-        print(list_of_SNPs)
         phase_temp = phase.loc[:, phase.columns.intersection([str(x) for x in list_of_SNPs])]
         list_of_SNPs_phase = phase_temp.columns.tolist()
-        print(len(list_of_SNPs_phase))
         phase_temp = phase_temp.reset_index().rename(columns={'index': 'ID'})
         phase_temp['haps'] = phase_haps
         anc_copyprobs_temp = anc_copyprobs[list_of_SNPs]

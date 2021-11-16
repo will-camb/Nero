@@ -112,7 +112,7 @@ parser.add_argument("-phasefile",
                     help="Should be named in form chr#.merged.phase.gz",
                     required=True)
 parser.add_argument("-idfile",
-                    help="Directory of idfile used in chromopainter ('individual pop 1')",
+                    help="Directory of idfile used in chromopainter ('individual pop 1') for phasefile",
                     required=True)
 parser.add_argument("-phenotypes",
                     help="File with list of phenotypes being looked at; NB extension must be .gz and not.bgz!",
@@ -133,6 +133,10 @@ parser.add_argument("-reverse_cols",
                     help="Whether to reverse column names; can take two values: True or False. NB this refers to "
                          "copyprobs_file_original AND copyprobs_file_imputed",
                     required=True)
+parser.add_argument("-LD_prune",
+                    help="Whether to prune SNPs for LD - lowest p-value per Pickrell LD block; "
+                         "can take two values: True or False",
+                    required=True)
 args = parser.parse_args()
 if args.bootstrap == 'True':
     bootstrap = True
@@ -142,9 +146,14 @@ if args.reverse_cols == 'True':
     reverse_cols = True
 else:
     reverse_cols = False
+if args.LD_prune == 'True':
+    LD_prune = True
+else:
+    LD_prune = False
 
 # Read in copyprobs
 if reverse_cols:  # For copyprobs files with incorrectly ordered columns
+    print("You have indicated cols in copyprobs files are incorrectly ordered")
     col_names = pd.read_csv(str(args.copyprobs_file_imputed), sep=" ", nrows=0).columns
     types_dict = {'0': str}
     types_dict.update({col: 'float' for col in col_names if col not in types_dict})
@@ -152,11 +161,12 @@ if reverse_cols:  # For copyprobs files with incorrectly ordered columns
     anc_copyprobs.set_index("0", inplace=True)
     anc_copyprobs.columns = anc_copyprobs.columns.tolist()[::-1]  # Reverse column names because they are mis-labelled;
 #  so when correct, column names are descending
-else:  # For correctly labelled cols in copyprobs:
-    col_names = pd.read_csv(str(args.copyprobs_file_imputed), sep=" ", nrows=0).columns
+else:  # For correctly labelled cols in copyprobs
+    print("You have indicated cols in copyprobs files are correctly ordered")
+    col_names = pd.read_csv(str(args.copyprobs_file_imputed), nrows=0).columns
     types_dict = {'ID': str}
     types_dict.update({col: 'float' for col in col_names if col not in types_dict})
-    anc_copyprobs = pd.read_csv(str(args.copyprobs_file_imputed), sep=" ", dtype=types_dict)
+    anc_copyprobs = pd.read_csv(str(args.copyprobs_file_imputed), dtype=types_dict)
     anc_copyprobs.set_index("ID", inplace=True)
 copyprobs_haps = list()
 for h in range(int(anc_copyprobs.shape[0] / 2)):
@@ -218,25 +228,30 @@ for file in phenotypes:
                     GWAS_variants_pval.drop(index, inplace=True)
         GWAS_variants_pval.reset_index(inplace=True, drop=True)
         print(GWAS_variants_pval.shape)
-        # print(GWAS_variants_pval['POS (hg19'].tolist())
-        best_per_block = pd.DataFrame(columns=GWAS_variants_pval.columns)
-        for index, row in ldetect.iterrows():
-            block = GWAS_variants_pval.loc[(GWAS_variants_pval['POS (hg19)'].astype(int) >= row['start']) & (
-                    GWAS_variants_pval['POS (hg19)'].astype(int) < row['stop'])].reset_index()
-            try:
-                block = block.reset_index()
-                # best_per_block.loc[index] = block.iloc[block['beta'].abs().idxmax()]  # Take highest beta
-                best_per_block.loc[index] = block.iloc[block['P (joined)'].idxmin()]  # Take lowest p-val
-            except ValueError:  # For when there are no SNPs that pass p-val threshold in the block
-                continue
-        list_of_SNPs = best_per_block['POS (hg19)'].drop_duplicates().tolist()
+        if LD_prune:  # Choose lowest p-value per LD block
+            best_per_block = pd.DataFrame(columns=GWAS_variants_pval.columns)
+            for index, row in ldetect.iterrows():
+                block = GWAS_variants_pval.loc[(GWAS_variants_pval['POS (hg19)'].astype(int) >= row['start']) & (
+                        GWAS_variants_pval['POS (hg19)'].astype(int) < row['stop'])].reset_index()
+                try:
+                    block = block.reset_index()
+                    # best_per_block.loc[index] = block.iloc[block['beta'].abs().idxmax()]  # Take highest beta
+                    best_per_block.loc[index] = block.iloc[block['P (joined)'].idxmin()]  # Take lowest p-val
+                except ValueError:  # For when there are no SNPs that pass p-val threshold in the block
+                    continue
+            list_of_SNPs = best_per_block['POS (hg19)'].drop_duplicates().tolist()
+        else:
+            list_of_SNPs = GWAS_variants_pval['POS (hg19)'].drop_duplicates().tolist()
         print(len(list_of_SNPs))
         phase_temp = phase.loc[:, phase.columns.intersection([str(x) for x in list_of_SNPs])]
         list_of_SNPs_phase = phase_temp.columns.tolist()
         phase_temp = phase_temp.reset_index().rename(columns={'index': 'ID'})
         phase_temp['haps'] = phase_haps
         anc_copyprobs_temp = anc_copyprobs[list_of_SNPs]
-        anc_copyprobs_temp = anc_copyprobs_temp.reset_index().rename(columns={'0': 'ID'})
+        if reverse_cols:
+            anc_copyprobs_temp = anc_copyprobs_temp.reset_index().rename(columns={'0': 'ID'})
+        else:
+            anc_copyprobs_temp = anc_copyprobs_temp.reset_index()
         print(anc_copyprobs_temp.shape)
         anc_copyprobs_temp['haps'] = copyprobs_haps
         merged_phase_copyprobs = pd.merge(phase_temp, anc_copyprobs_temp, on=['ID', 'haps'])

@@ -85,6 +85,7 @@ else:  # For correctly labelled cols in copyprobs:
                 painted_snp_list.sort(reverse=True)
                 snp1 = painted_snp_list[painted_snp_list.index(snp)-1]
                 snp2 = painted_snp_list[painted_snp_list.index(snp)+1]
+                painted_snp_list.remove(snp)
                 temp_anc_copyprobs = pd.read_csv(args.copyprobs_file, sep=" ",
                                                  usecols=['ID', str(snp1), str(snp2)],
                                                  dtype={'ID': str, str(snp1): 'int8', str(snp2): 'int8'})\

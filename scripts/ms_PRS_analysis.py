@@ -55,7 +55,11 @@ def analyse_anc_phased(merged_phase_copyprobs_temp, anc, chrom, pval, iteration,
             print(str(i) + " is not phased, so looking at homozygous individuals")
             try:
                 EUR_maf = GWAS_variants.loc[GWAS_variants['POS (hg19)'] == i].EUR.item()
-                rsid = rsID_mapping.loc[rsID_mapping['Position'] == int(i)]["rsID"].item()
+                # rsid = rsID_mapping.loc[rsID_mapping['Position'] == int(i)]["rsID"].item()
+                # Get first instance of rsID; when there is more than 1 variant at the same position,
+                # take first then delete row so we take second the second time
+                rsid = rsID_mapping.iloc[(rsID_mapping['Position'] == int(i)).idxmax()]['OR'].item()
+                rsID_mapping.drop([(rsID_mapping['Position'] == int(i)).idxmax()])
                 samples_0 = pd.read_csv(args.output_files + str(rsid) + ".hom.0.samples", header=None)
                 samples_1 = pd.read_csv(args.output_files + str(rsid) + ".hom.1.samples", header=None)
             except (ValueError, IOError):
@@ -229,6 +233,7 @@ for file in phenotypes:
         GWAS_variants_pval.reset_index(inplace=True, drop=True)
         print(GWAS_variants_pval.shape)
         if LD_prune:  # Choose lowest p-value per LD block
+            print("Finding lowest p-value SNP per independent LD block")
             best_per_block = pd.DataFrame(columns=GWAS_variants_pval.columns)
             for index, row in ldetect.iterrows():
                 block = GWAS_variants_pval.loc[(GWAS_variants_pval['POS (hg19)'].astype(int) >= row['start']) & (
@@ -241,6 +246,7 @@ for file in phenotypes:
                     continue
             list_of_SNPs = best_per_block['POS (hg19)'].drop_duplicates().tolist()
         else:
+            print("Including all SNPs - not running LD pruning")
             list_of_SNPs = GWAS_variants_pval['POS (hg19)'].drop_duplicates().tolist()
         print(len(list_of_SNPs))
         phase_temp = phase.loc[:, phase.columns.intersection([str(x) for x in list_of_SNPs])]

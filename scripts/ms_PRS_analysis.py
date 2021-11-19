@@ -58,8 +58,9 @@ def analyse_anc_phased(merged_phase_copyprobs_temp, anc, chrom, pval, iteration,
                 # rsid = rsID_mapping.loc[rsID_mapping['Position'] == int(i)]["rsID"].item()
                 # Get first instance of rsID; when there is more than 1 variant at the same position,
                 # take first then delete row so we take second the second time
-                rsid = rsID_mapping.iloc[(rsID_mapping['Position'] == int(i)).idxmax()]['OR'].item()
-                rsID_mapping.drop([(rsID_mapping['Position'] == int(i)).idxmax()])
+                rsID_mapping.reset_index(drop=True, inplace=True)
+                rsid = rsID_mapping.loc[(rsID_mapping['Position'] == int(i)).idxmax()]['rsID']
+                rsID_mapping.drop([(rsID_mapping['Position'] == int(i)).idxmax()], inplace=True)
                 samples_0 = pd.read_csv(args.output_files + str(rsid) + ".hom.0.samples", header=None)
                 samples_1 = pd.read_csv(args.output_files + str(rsid) + ".hom.1.samples", header=None)
             except (ValueError, IOError):

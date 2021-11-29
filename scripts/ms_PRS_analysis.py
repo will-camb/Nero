@@ -2,12 +2,13 @@ import pandas as pd
 import argparse
 import os
 import numpy as np
+pd.options.mode.chained_assignment = None  # default='warn'
 
 
-def analyse_anc_phased(merged_phase_copyprobs_temp, anc, chrom, pval, iteration, phenotype_file):
-    global list_of_SNPs
+def analyse_anc(merged_phase_copyprobs_temp, anc, chrom, pval, iteration, phenotype_file, list_of_SNPs_):
     global list_of_SNPs_phase
     global rsID_mapping
+    global GWAS_variants_pval
     global anc_copyprobs_temp
     skipped_snps = 0
     if len(list_of_SNPs_phase) != 0:
@@ -16,16 +17,18 @@ def analyse_anc_phased(merged_phase_copyprobs_temp, anc, chrom, pval, iteration,
         for n, i in enumerate(list_of_SNPs_phase):
             phase_sum_dict[i] = phase_sum[n]
     alt_mapping = {}
-    output = pd.DataFrame(index=list_of_SNPs, columns=['alt', 'ref'])
-    for i in list_of_SNPs:
+    output = pd.DataFrame(columns=['pos', 'alt', 'ref', 'OR'])
+    for n, i in enumerate(list_of_SNPs_):
         if str(i) in list_of_SNPs_phase:  # for phased snps
             print(str(i) + " is phased and painted (in phasefile)")
             try:
-                EUR_maf = GWAS_variants.loc[GWAS_variants['POS (hg19)'] == i].EUR.item()
-            except ValueError:
+                GWAS_variants_pval.reset_index(drop=True, inplace=True)
+                EUR_maf = GWAS_variants_pval.loc[GWAS_variants_pval['POS (hg19)'] == i].EUR.item()
+                OR = GWAS_variants_pval.loc[(GWAS_variants_pval['POS (hg19)'].astype(int) == i).idxmax()].OR.item()
+                GWAS_variants_pval.drop([(GWAS_variants_pval['POS (hg19)'].astype(int) == i).idxmax()], inplace=True)
+            except Exception as e:
                 skipped_snps += 1
-                list_of_SNPs.remove(i)
-                print("Couldn't find EUR_maf for position:" + str(i) + ", so skipping")
+                print("Couldn't find EUR_maf for position:" + str(i) + ", so skipping: " + str(e))
                 continue
             #  Check if alt/effect allele is major or minor
             if EUR_maf == -1:  # For all of these, alt/effect=minor
@@ -49,12 +52,14 @@ def analyse_anc_phased(merged_phase_copyprobs_temp, anc, chrom, pval, iteration,
                       (i, 'copyprobs')].sum()
             ref_sum = merged_phase_copyprobs_temp.loc[merged_phase_copyprobs_temp[i]['phase'] != alt_mapping[i]].loc[:,
                       (i, 'copyprobs')].sum()
-            output.at[i, 'alt'] = alt_sum
-            output.at[i, 'ref'] = ref_sum
+            output.loc[n] = [i, alt_sum, ref_sum, OR]
         else:  # for non-phased snps
             print(str(i) + " is not phased, so looking at homozygous individuals")
             try:
-                EUR_maf = GWAS_variants.loc[GWAS_variants['POS (hg19)'] == i].EUR.item()
+                GWAS_variants_pval.reset_index(drop=True, inplace=True)
+                EUR_maf = GWAS_variants_pval.loc[(GWAS_variants_pval['POS (hg19)'].astype(int) == i).idxmax()].EUR.item()
+                OR = GWAS_variants_pval.loc[(GWAS_variants_pval['POS (hg19)'].astype(int) == i).idxmax()].OR.item()
+                GWAS_variants_pval.drop([(GWAS_variants_pval['POS (hg19)'].astype(int) == i).idxmax()], inplace=True)
                 # rsid = rsID_mapping.loc[rsID_mapping['Position'] == int(i)]["rsID"].item()
                 # Get first instance of rsID; when there is more than 1 variant at the same position,
                 # take first then delete row so we take second the second time
@@ -63,12 +68,14 @@ def analyse_anc_phased(merged_phase_copyprobs_temp, anc, chrom, pval, iteration,
                 rsID_mapping.drop([(rsID_mapping['Position'] == int(i)).idxmax()], inplace=True)
                 samples_0 = pd.read_csv(args.output_files + str(rsid) + ".hom.0.samples", header=None)
                 samples_1 = pd.read_csv(args.output_files + str(rsid) + ".hom.1.samples", header=None)
-            except (ValueError, IOError):
+            except Exception as e:
                 skipped_snps += 1
-                list_of_SNPs.remove(i)
-                print("Couldn't find rsID/EUR_maf/output file for position:" + str(i) + ", so skipping")
+                print("Couldn't find rsID/EUR_maf/output file for position:" + str(i) + ", so skipping: " + str(e))
                 continue
-            anc_copyprobs_temp_i = anc_copyprobs_temp[['ID', str(i)]]
+            try:
+                anc_copyprobs_temp_i = anc_copyprobs_temp[['ID', str(i)]]
+            except Exception as e:
+                print("Couldn't find SNP with pos " + str(i) + " in anc_copyprobs: " + str(e))
             if EUR_maf == -1:  # For all of these, alt/effect=minor
                 if samples_0.shape[0] < (len(copyprobs_haps) / 8):
                     alt_mapping[i] = 0
@@ -91,19 +98,17 @@ def analyse_anc_phased(merged_phase_copyprobs_temp, anc, chrom, pval, iteration,
             elif alt_mapping[i] == 1:
                 alt_sum = anc_copyprobs_temp_i.loc[anc_copyprobs_temp_i['ID'].isin(samples_1[0].tolist())][i].sum()
                 ref_sum = anc_copyprobs_temp_i.loc[anc_copyprobs_temp_i['ID'].isin(samples_0[0].tolist())][i].sum()
-            output.at[i, 'alt'] = alt_sum
-            output.at[i, 'ref'] = ref_sum
+            output.loc[n] = [i, alt_sum, ref_sum, OR]
     output['maf'] = output['alt'] / (output['alt'] + output['ref'])
     output['maf'] = output['maf'].fillna(0)
-    output = output.reset_index().rename(columns={'index': 'pos'})
-    maf_GWAS = pd.merge(output, GWAS_variants, left_on='pos', right_on='POS (hg19)')
-    maf_GWAS['beta'] = np.log(maf_GWAS['OR'])  # Need to transform OR to beta
-    maf_GWAS['maf_x_beta'] = maf_GWAS['maf'] * maf_GWAS['beta']
-    PRS = maf_GWAS['maf_x_beta'].sum()
-    number_of_SNPs = len(list_of_SNPs)
+    maf_GWAS = output
+    output['beta'] = np.log(output['OR'].astype(float))  # Need to transform OR to beta
+    output['maf_x_beta'] = output['maf'] * output['beta']
+    PRS = output['maf_x_beta'].sum()
+    number_of_SNPs = len(list_of_SNPs_)
     results_list.append(
         [args.copyprobs_file_imputed, phenotype_file, anc, chrom, PRS, number_of_SNPs, skipped_snps, pval, iteration,
-         maf_GWAS['maf'].tolist(), maf_GWAS['beta'].tolist(), list_of_SNPs])
+         maf_GWAS['maf'].tolist(), maf_GWAS['beta'].tolist(), maf_GWAS['pos'].tolist()])
 
 
 parser = argparse.ArgumentParser()
@@ -217,22 +222,21 @@ for file in phenotypes:
         if GWAS_variants_pval.empty:
             print("No SNPs pass p-val threshold for " + str(args.chr))
             continue
-        for index, row in GWAS_variants_pval.iterrows():
+        # for index, row in GWAS_variants_pval.iterrows():
             # Drop SNPs from GWAS_variants that are neither painted or imputed
-            if row['POS (hg19)'] not in phase.columns.tolist():  # Check dtypes! POS is string!
-                try:
-                    rsID = rsID_mapping.loc[rsID_mapping['Position'] == int(row['POS (hg19)'])]['rsID'].item()
-                except ValueError:
-                    print(str(row['POS (hg19)']) + " has not been painted, and can't find rsID info... skipping")
-                    GWAS_variants.drop(index, inplace=True)  # For SNPs with no rsID found
-                    continue
-                if os.path.isfile(args.output_files + rsID + ".hom.1.samples"):
-                    continue
-                else:
-                    print(str(row['POS (hg19)']) + " has not been painted/imputed, so skipping")
-                    GWAS_variants_pval.drop(index, inplace=True)
-        GWAS_variants_pval.reset_index(inplace=True, drop=True)
-        print(GWAS_variants_pval.shape)
+            # if row['POS (hg19)'] not in phase.columns.tolist():  # Check dtypes! POS is string!
+                # try:
+                #     rsID = rsID_mapping.loc[rsID_mapping['Position'] == int(row['POS (hg19)'])]['rsID'].item()
+                # except ValueError:
+                #     print(str(row['POS (hg19)']) + " has not been painted, and can't find rsID info... skipping")
+                #     GWAS_variants_pval.drop(index, inplace=True)  # For SNPs with no rsID found
+                #     continue
+                # if os.path.isfile(args.output_files + rsID + ".hom.1.samples"):
+                #     continue
+                # else:
+                #     print(str(row['POS (hg19)']) + " has not been painted/imputed, so skipping")
+                #     GWAS_variants_pval.drop(index, inplace=True)
+        # GWAS_variants_pval.reset_index(inplace=True, drop=True)
         if LD_prune:  # Choose lowest p-value per LD block
             print("Finding lowest p-value SNP per independent LD block")
             best_per_block = pd.DataFrame(columns=GWAS_variants_pval.columns)
@@ -248,18 +252,17 @@ for file in phenotypes:
             list_of_SNPs = best_per_block['POS (hg19)'].drop_duplicates().tolist()
         else:
             print("Including all SNPs - not running LD pruning")
-            list_of_SNPs = GWAS_variants_pval['POS (hg19)'].drop_duplicates().tolist()
-        print(len(list_of_SNPs))
-        phase_temp = phase.loc[:, phase.columns.intersection([str(x) for x in list_of_SNPs])]
+            list_of_SNPs_unique = GWAS_variants_pval['POS (hg19)'].drop_duplicates().tolist()
+            list_of_SNPs = GWAS_variants_pval['POS (hg19)'].tolist()  # There are some repeats of positions
+        phase_temp = phase.loc[:, phase.columns.intersection([str(x) for x in list_of_SNPs_unique])]
         list_of_SNPs_phase = phase_temp.columns.tolist()
         phase_temp = phase_temp.reset_index().rename(columns={'index': 'ID'})
         phase_temp['haps'] = phase_haps
-        anc_copyprobs_temp = anc_copyprobs[list_of_SNPs]
+        anc_copyprobs_temp = anc_copyprobs[list_of_SNPs_unique]
         if reverse_cols:
             anc_copyprobs_temp = anc_copyprobs_temp.reset_index().rename(columns={'0': 'ID'})
         else:
             anc_copyprobs_temp = anc_copyprobs_temp.reset_index()
-        print(anc_copyprobs_temp.shape)
         anc_copyprobs_temp['haps'] = copyprobs_haps
         merged_phase_copyprobs = pd.merge(phase_temp, anc_copyprobs_temp, on=['ID', 'haps'])
         reorder = [[str(x) + "_x", str(x) + "_y"] for x in list_of_SNPs_phase]
@@ -271,9 +274,9 @@ for file in phenotypes:
         if bootstrap:
             for bs in range(1000):
                 temp = merged_phase_copyprobs.sample(n=merged_phase_copyprobs.shape[0], replace=True)
-                analyse_anc_phased(temp, str(args.anc), args.chr, p, bs, file)
+                analyse_anc(temp, str(args.anc), args.chr, p, bs, file, list_of_SNPs)
         else:
-            analyse_anc_phased(merged_phase_copyprobs, str(args.anc), args.chr, p, bootstrap, file)
+            analyse_anc(merged_phase_copyprobs, str(args.anc), args.chr, p, bootstrap, file, list_of_SNPs)
 
 print("***Success! Now writing results to output file***")
 if not os.path.exists("PRS_calculations_bootstrapped_ms_" + str(args.phenotypes)):

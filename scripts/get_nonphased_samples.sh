@@ -22,6 +22,9 @@ pbwt -readVcfGT "$rsID".GT.hom.vcf.gz -writeImputeHapsG "$rsID".haps
 impute2chromopainter.pl "$rsID".haps "$rsID".phase
 python3 << END
 import pandas as pd
+from pathlib import Path
+
+Path("output_files/").mkdir(parents=True, exist_ok=True)
 phase=pd.read_csv("$rsID.phase", skiprows=3, header=None)
 phase[1] = [val for val in pd.read_csv("UKBB_samples", header=None)[0].unique().tolist() for _ in (0, 1)]
 haps = list()

@@ -110,6 +110,9 @@ else:  # For correctly labelled cols in copyprobs:
     impute_snps = impute_snps.loc[impute_snps.iloc[:, 0] == int(args.chr)]
     impute_snp_list = impute_snps.iloc[:, 1].tolist()
     impute_snp_list = list(set(impute_snp_list))
+    if len(impute_snp_list) == 0:
+        print("No SNPs to be imputed for " + str(args.chr) + ", exiting")
+        sys.exit()
     impute_snp_list.sort(reverse=True)  # descending
     imputed_snps = impute(impute_snp_list)  # NB saves in correct order!
     imputed_snps.to_csv("imputed/temp." + str(args.anc) + "." + str(args.chr) + ".master_all_copyprobsperlocus.txt.gz",

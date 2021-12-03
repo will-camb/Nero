@@ -250,6 +250,7 @@ for file in phenotypes:
                 except ValueError:  # For when there are no SNPs that pass p-val threshold in the block
                     continue
             list_of_SNPs = best_per_block['POS (hg19)'].drop_duplicates().tolist()
+            list_of_SNPs_unique = list_of_SNPs
         else:
             print("Including all SNPs - not running LD pruning")
             list_of_SNPs_unique = GWAS_variants_pval['POS (hg19)'].drop_duplicates().tolist()

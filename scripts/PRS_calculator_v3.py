@@ -81,6 +81,7 @@ if args.bootstrap == 'True':
     bootstrap = True
 else:
     bootstrap = False
+
 # Read in copyprobs
 col_names = pd.read_csv(str(args.copyprobs_file), sep=" ", nrows=0).columns
 types_dict = {'0': str}
@@ -156,9 +157,9 @@ for file in phenotypes:
         merged_phase_copyprobs.columns = pd.MultiIndex.from_product(iterables, names=['first', 'second'])
         merged_phase_copyprobs.set_index('ID', inplace=True)
         if bootstrap:
-            for bs in range(50):
+            for bs in range(1000):
                 temp = merged_phase_copyprobs.sample(n=merged_phase_copyprobs.shape[0], replace=True)
-                analyse_anc(temp, str(args.anc), args.chr, p, bootstrap, file)
+                analyse_anc(temp, str(args.anc), args.chr, p, bs, file)
         else:
             analyse_anc(merged_phase_copyprobs, str(args.anc), args.chr, p, bootstrap, file)
 

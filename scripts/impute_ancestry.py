@@ -62,6 +62,10 @@ if reverse_cols:  # For copyprobs files with incorrectly ordered columns
     impute_snps = impute_snps.loc[impute_snps.iloc[:, 0] == int(args.chr)]
     impute_snp_list = impute_snps.iloc[:, 1].tolist()
     impute_snp_list = list(set(impute_snp_list))
+    impute_snp_list = [int(x) for x in impute_snp_list]
+    if len(impute_snp_list) == 0:
+        print("No SNPs to be imputed for " + str(args.chr) + ", exiting")
+        sys.exit()
     impute_snp_list.sort(reverse=True)
     imputed_snps = impute(impute_snp_list)
     imputed_snps.columns = imputed_snps.columns.tolist()[::-1]
@@ -78,7 +82,7 @@ else:  # For correctly labelled cols in copyprobs:
             if snp in painted_snp_list:
                 temp_anc_copyprobs = pd.read_csv(args.copyprobs_file, sep=" ",
                                                  usecols=['ID', str(snp)],
-                                                 dtype={'ID': str, str(snp): 'int8'}).set_index("ID", drop=True)
+                                                 dtype={'ID': str, str(snp): 'float'}).set_index("ID", drop=True)
                 df.loc[:, snp] = temp_anc_copyprobs[str(snp)]
             else:
                 painted_snp_list.append(snp)
@@ -110,6 +114,7 @@ else:  # For correctly labelled cols in copyprobs:
     impute_snps = impute_snps.loc[impute_snps.iloc[:, 0] == int(args.chr)]
     impute_snp_list = impute_snps.iloc[:, 1].tolist()
     impute_snp_list = list(set(impute_snp_list))
+    impute_snp_list = [int(x) for x in impute_snp_list]
     if len(impute_snp_list) == 0:
         print("No SNPs to be imputed for " + str(args.chr) + ", exiting")
         sys.exit()

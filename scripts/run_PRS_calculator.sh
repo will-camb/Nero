@@ -21,16 +21,25 @@ bootstrap="$5"
 chrlist=$(seq 1 22)
 ancestries="CHG EHG Farmer African EastAsian WHG Yamnaya"
 
+# For running on a subset of painted individuals in UKB
 for chr in $chrlist; do
   for anc in $ancestries; do
     echo "python3 PRS_calculator_v3.py -copyprobs_file $copyprobs_directory/temp.$anc.$chr.master_all_copyprobsperlocus.txt.gz -phasefile $phasefile_directory/transformed.$chr.merged.phase.gz -idfile $idfile -phenotypes $phenotype_file -chr $chr -anc $anc -bootstrap $bootstrap" >> PRS_calculator_commands_temp
   done
 done
 
+# For running on all painted individuals in UKB
+#for chr in $chrlist; do
+#  for anc in $ancestries; do
+#    echo "python3 PRS_calculator_v3.py -copyprobs_file $copyprobs_directory/$anc.$chr.master_all_copyprobsperlocus.txt.gz -phasefile $phasefile_directory/$chr.merged.phase.gz -idfile $idfile -phenotypes $phenotype_file -chr $chr -anc $anc -bootstrap $bootstrap" >> PRS_calculator_commands_temp
+#  done
+#done
+
+
 echo "Now running commands in PRS_calculator_commands in parallel"
 shuf PRS_calculator_commands_temp > PRS_calculator_commands_"$phenotype_file"
 rm PRS_calculator_commands_temp
-cat PRS_calculator_commands_"$phenotype_file" | parallel  -j 15
+cat PRS_calculator_commands_"$phenotype_file" | parallel  -j 50 # Change as appropriate
 
 echo "*** All done, results are in PRS_calculations_v3 ***"
 

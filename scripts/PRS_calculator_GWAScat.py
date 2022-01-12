@@ -16,15 +16,16 @@ def analyse_anc(merged_phase_copyprobs_temp, anc, chrom, pval, iteration, phenot
         for n, i in enumerate(list_of_SNPs_phase):
             phase_sum_dict[i] = phase_sum[n]
     alt_mapping = {}
-    output = pd.DataFrame(columns=['pos', 'alt', 'ref', 'OR'])
-    for n, i in enumerate(list_of_SNPs_):
+    output = pd.DataFrame(columns=['pos', 'alt', 'ref', 'alt_average', 'ref_average', 'OR', 'rsID'])
+    for n, i in enumerate(list_of_SNPs_):  # i is string!
         if str(i) in list_of_SNPs_phase:  # for phased snps
-            print(str(i) + " is phased and painted (in phasefile)")
+            print(i + " is phased and painted (in phasefile)")
             try:
                 GWAS_variants_pval.reset_index(drop=True, inplace=True)
-                EUR_maf = GWAS_variants_pval.loc[GWAS_variants_pval['CHR_POS'].astype(int) == i]['RISK ALLELE FREQUENCY'].item()
-                OR = GWAS_variants_pval.loc[(GWAS_variants_pval['CHR_POS'].astype(int) == i).idxmax()]['OR or BETA'].item()
-                GWAS_variants_pval.drop([(GWAS_variants_pval['CHR_POS'].astype(int) == i).idxmax()], inplace=True)
+                EUR_maf = GWAS_variants_pval.loc[(GWAS_variants_pval['CHR_POS'].astype(int) == int(i)).idxmax()]['RISK ALLELE FREQUENCY'].item()
+                OR = GWAS_variants_pval.loc[(GWAS_variants_pval['CHR_POS'].astype(int) == int(i)).idxmax()]['OR or BETA'].item()
+                rsid = GWAS_variants_pval.loc[(GWAS_variants_pval['CHR_POS'].astype(int) == int(i)).idxmax()]['SNPS']
+                GWAS_variants_pval.drop([(GWAS_variants_pval['CHR_POS'].astype(int) == int(i)).idxmax()], inplace=True)
             except Exception as e:
                 skipped_snps += 1
                 print("Couldn't find EUR_maf for position:" + str(i) + ", so skipping: " + str(e))
@@ -51,15 +52,19 @@ def analyse_anc(merged_phase_copyprobs_temp, anc, chrom, pval, iteration, phenot
                       (i, 'copyprobs')].sum()
             ref_sum = merged_phase_copyprobs_temp.loc[merged_phase_copyprobs_temp[i]['phase'] != alt_mapping[i]].loc[:,
                       (i, 'copyprobs')].sum()
-            output.loc[n] = [i, alt_sum, ref_sum, OR]
+            alt_average = alt_sum / merged_phase_copyprobs_temp.loc[merged_phase_copyprobs_temp[i]['phase'] == alt_mapping[i]].loc[:,
+                      (i, 'copyprobs')].shape[0]
+            ref_average = ref_sum / merged_phase_copyprobs_temp.loc[merged_phase_copyprobs_temp[i]['phase'] != alt_mapping[i]].loc[:,
+                      (i, 'copyprobs')].shape[0]
+            output.loc[n] = [i, alt_sum, ref_sum, alt_average, ref_average, OR, rsid]
         else:  # for non-phased snps
             print(str(i) + " is not phased, so looking at homozygous individuals")
             try:
                 GWAS_variants_pval.reset_index(drop=True, inplace=True)
-                EUR_maf = GWAS_variants_pval.loc[(GWAS_variants_pval['CHR_POS'].astype(int) == i).idxmax()]['RISK ALLELE FREQUENCY'].item()
-                OR = GWAS_variants_pval.loc[(GWAS_variants_pval['CHR_POS'].astype(int) == i).idxmax()]['OR or BETA'].item()
-                rsid = GWAS_variants_pval.loc[(GWAS_variants_pval['CHR_POS'].astype(int) == i).idxmax()]['SNPS']
-                GWAS_variants_pval.drop([(GWAS_variants_pval['CHR_POS'].astype(int) == i).idxmax()], inplace=True)
+                EUR_maf = GWAS_variants_pval.loc[(GWAS_variants_pval['CHR_POS'].astype(int) == int(i)).idxmax()]['RISK ALLELE FREQUENCY'].item()
+                OR = GWAS_variants_pval.loc[(GWAS_variants_pval['CHR_POS'].astype(int) == int(i)).idxmax()]['OR or BETA'].item()
+                rsid = GWAS_variants_pval.loc[(GWAS_variants_pval['CHR_POS'].astype(int) == int(i)).idxmax()]['SNPS']
+                GWAS_variants_pval.drop([(GWAS_variants_pval['CHR_POS'].astype(int) == int(i)).idxmax()], inplace=True)
                 # Get first instance of rsID; when there is more than 1 variant at the same position,
                 # take first then delete row so we take second the second time
                 samples_0 = pd.read_csv(args.output_files + str(rsid) + ".hom.0.samples", header=None)
@@ -91,20 +96,26 @@ def analyse_anc(merged_phase_copyprobs_temp, anc, chrom, pval, iteration, phenot
             if alt_mapping[i] == 0:
                 alt_sum = anc_copyprobs_temp_i.loc[anc_copyprobs_temp_i['ID'].isin(samples_0[0].tolist())][i].sum()
                 ref_sum = anc_copyprobs_temp_i.loc[anc_copyprobs_temp_i['ID'].isin(samples_1[0].tolist())][i].sum()
+                alt_average = alt_sum / len(samples_0[0].tolist())
+                ref_average = ref_sum / len(samples_1[0].tolist())
             elif alt_mapping[i] == 1:
                 alt_sum = anc_copyprobs_temp_i.loc[anc_copyprobs_temp_i['ID'].isin(samples_1[0].tolist())][i].sum()
                 ref_sum = anc_copyprobs_temp_i.loc[anc_copyprobs_temp_i['ID'].isin(samples_0[0].tolist())][i].sum()
-            output.loc[n] = [i, alt_sum, ref_sum, OR]
+                alt_average = alt_sum / len(samples_1[0].tolist())
+                ref_average = ref_sum / len(samples_0[0].tolist())
+            output.loc[n] = [i, alt_sum, ref_sum, alt_average, ref_average, OR, rsid]
     output['maf'] = output['alt'] / (output['alt'] + output['ref'])
     output['maf'] = output['maf'].fillna(0)
-    maf_GWAS = output
+    output['maf_average'] = output['alt_average'] / (output['alt_average'] + output['ref_average'])
+    output['maf_average'] = output['maf_average'].fillna(0)
     output['beta'] = np.log(output['OR'].astype(float))  # Need to transform OR to beta
     output['maf_x_beta'] = output['maf'] * output['beta']
     PRS = output['maf_x_beta'].sum()
+    maf_GWAS = output
     number_of_SNPs = len(list_of_SNPs_)
     results_list.append(
         [args.copyprobs_file_imputed, phenotype_file, anc, chrom, PRS, number_of_SNPs, skipped_snps, pval, iteration,
-         maf_GWAS['maf'].tolist(), maf_GWAS['beta'].tolist(), maf_GWAS['pos'].tolist()])
+         maf_GWAS['maf'].tolist(), maf_GWAS['maf_average'].tolist(), maf_GWAS['beta'].tolist(), maf_GWAS['pos'].tolist(), maf_GWAS['rsID'].tolist()])
 
 
 parser = argparse.ArgumentParser()
@@ -213,7 +224,7 @@ for file in phenotypes:
     if GWAS_variants.empty:
         print("GWAS_variants is empty!")
         continue
-    for p in [5e-6]:  # NB Should this be changed??
+    for p in [5e-8]:  # NB Should this be changed??
         GWAS_variants_pval = GWAS_variants.loc[GWAS_variants['P-VALUE'] < p]
         if GWAS_variants_pval.empty:
             print("No SNPs pass p-val threshold for " + str(args.chr))

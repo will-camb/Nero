@@ -27,11 +27,11 @@ bootstrap="$7"
 reverse_cols="$8"
 LD_prune="$9"
 chrlist=$(seq 1 22)
-ancestries="CHG EHG Farmer African EastAsian WHG Yamnaya"
+ancestries="CHG EHG Farmer African EastAsian WHG Yamnaya Steppe"
 
 for chr in $chrlist; do
   for anc in $ancestries; do
-    echo "python3 ms_PRS_analysis.py -copyprobs_file_original $copyprobs_directory_original/$anc.$chr.master_all_copyprobsperlocus.txt.gz -copyprobs_file_imputed $copyprobs_directory_imputed/temp.$anc.$chr.master_all_copyprobsperlocus.txt.gz -phasefile $phasefile_directory/transformed.$chr.merged.phase.gz -idfile $idfile -phenotypes $phenotype_file -output_files $output_files -chr $chr -anc $anc -bootstrap $bootstrap -reverse_cols $reverse_cols -LD_prune $LD_prune" >> PRS_calculator_commands_temp
+    echo "python3 ms_PRS_analysis.py -copyprobs_file_original $copyprobs_directory_original/Yamnaya.$chr.master_all_copyprobsperlocus.txt.gz -copyprobs_file_imputed $copyprobs_directory_imputed/temp.$anc.$chr.master_all_copyprobsperlocus.txt.gz -phasefile $phasefile_directory/transformed.$chr.merged.phase.gz -idfile $idfile -phenotypes $phenotype_file -output_files $output_files -chr $chr -anc $anc -bootstrap $bootstrap -reverse_cols $reverse_cols -LD_prune $LD_prune" >> PRS_calculator_commands_temp
   done
 done
 

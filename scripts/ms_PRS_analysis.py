@@ -2,6 +2,7 @@ import pandas as pd
 import argparse
 import os
 import numpy as np
+
 pd.options.mode.chained_assignment = None  # default='warn'
 
 
@@ -28,9 +29,12 @@ def analyse_anc(merged_phase_copyprobs_temp, anc, chrom, pval, iteration, phenot
                 GWAS_variants_pval.drop([(GWAS_variants_pval['POS (hg19)'].astype(int) == i).idxmax()], inplace=True)
                 # Get first instance of rsID; when there is more than 1 variant at the same position,
                 # take first then delete row so we take second the second time
-                rsID_mapping.reset_index(drop=True, inplace=True)
-                rsid = rsID_mapping.loc[(rsID_mapping['Position'] == int(i)).idxmax()]['rsID']
-                rsID_mapping.drop([(rsID_mapping['Position'] == int(i)).idxmax()], inplace=True)
+                # rsID_mapping.reset_index(drop=True, inplace=True)
+                # rsid = rsID_mapping.loc[(rsID_mapping['Position'] == int(i)).idxmax()]['rsID']
+                # rsID_mapping.drop([(rsID_mapping['Position'] == int(i)).idxmax()], inplace=True)
+                rsids = rsID_mapping.loc[(rsID_mapping['Position'] == int(i))]
+                rsid = rsids.iloc[0]['rsID']
+                rsID_mapping.drop([rsids.index[0]], inplace=True)
             except Exception as e:
                 skipped_snps += 1
                 print("Couldn't find EUR_maf for position:" + str(i) + ", so skipping: " + str(e))
@@ -57,24 +61,30 @@ def analyse_anc(merged_phase_copyprobs_temp, anc, chrom, pval, iteration, phenot
                       (i, 'copyprobs')].sum()
             ref_sum = merged_phase_copyprobs_temp.loc[merged_phase_copyprobs_temp[i]['phase'] != alt_mapping[i]].loc[:,
                       (i, 'copyprobs')].sum()
-            alt_average = alt_sum / merged_phase_copyprobs_temp.loc[merged_phase_copyprobs_temp[i]['phase'] == alt_mapping[i]].loc[:,
-                      (i, 'copyprobs')].shape[0]
-            ref_average = ref_sum / merged_phase_copyprobs_temp.loc[merged_phase_copyprobs_temp[i]['phase'] != alt_mapping[i]].loc[:,
-                      (i, 'copyprobs')].shape[0]
+            alt_average = alt_sum / merged_phase_copyprobs_temp.loc[
+                                        merged_phase_copyprobs_temp[i]['phase'] == alt_mapping[i]].loc[:,
+                                    (i, 'copyprobs')].shape[0]
+            ref_average = ref_sum / merged_phase_copyprobs_temp.loc[
+                                        merged_phase_copyprobs_temp[i]['phase'] != alt_mapping[i]].loc[:,
+                                    (i, 'copyprobs')].shape[0]
             output.loc[n] = [i, alt_sum, ref_sum, alt_average, ref_average, OR, rsid]
         else:  # for non-phased snps
             print(str(i) + " is not phased, so looking at homozygous individuals")
             try:
                 GWAS_variants_pval.reset_index(drop=True, inplace=True)
-                EUR_maf = GWAS_variants_pval.loc[(GWAS_variants_pval['POS (hg19)'].astype(int) == i).idxmax()].EUR.item()
+                EUR_maf = GWAS_variants_pval.loc[
+                    (GWAS_variants_pval['POS (hg19)'].astype(int) == i).idxmax()].EUR.item()
                 OR = GWAS_variants_pval.loc[(GWAS_variants_pval['POS (hg19)'].astype(int) == i).idxmax()].OR.item()
                 GWAS_variants_pval.drop([(GWAS_variants_pval['POS (hg19)'].astype(int) == i).idxmax()], inplace=True)
                 # rsid = rsID_mapping.loc[rsID_mapping['Position'] == int(i)]["rsID"].item()
                 # Get first instance of rsID; when there is more than 1 variant at the same position,
                 # take first then delete row so we take second the second time
-                rsID_mapping.reset_index(drop=True, inplace=True)
-                rsid = rsID_mapping.loc[(rsID_mapping['Position'] == int(i)).idxmax()]['rsID']
-                rsID_mapping.drop([(rsID_mapping['Position'] == int(i)).idxmax()], inplace=True)
+                # rsID_mapping.reset_index(drop=True, inplace=True)
+                # rsid = rsID_mapping.loc[(rsID_mapping['Position'] == int(i)).idxmax()]['rsID']
+                # rsID_mapping.drop([(rsID_mapping['Position'] == int(i)).idxmax()], inplace=True)
+                rsids = rsID_mapping.loc[(rsID_mapping['Position'] == int(i))]
+                rsid = rsids.iloc[0]['rsID']
+                rsID_mapping.drop([rsids.index[0]], inplace=True)
                 samples_0 = pd.read_csv(args.output_files + str(rsid) + ".hom.0.samples", header=None)
                 samples_1 = pd.read_csv(args.output_files + str(rsid) + ".hom.1.samples", header=None)
             except Exception as e:
@@ -123,7 +133,8 @@ def analyse_anc(merged_phase_copyprobs_temp, anc, chrom, pval, iteration, phenot
     number_of_SNPs = len(list_of_SNPs_)
     results_list.append(
         [args.copyprobs_file_imputed, phenotype_file, anc, chrom, PRS, number_of_SNPs, skipped_snps, pval, iteration,
-         maf_GWAS['maf'].tolist(), maf_GWAS['maf_average'].tolist(), maf_GWAS['beta'].tolist(), maf_GWAS['pos'].tolist(), maf_GWAS['rsID'].tolist()])
+         maf_GWAS['maf'].tolist(), maf_GWAS['maf_average'].tolist(), maf_GWAS['beta'].tolist(),
+         maf_GWAS['pos'].tolist(), maf_GWAS['rsID'].tolist()])
 
 
 parser = argparse.ArgumentParser()
@@ -238,19 +249,19 @@ for file in phenotypes:
             print("No SNPs pass p-val threshold for " + str(args.chr))
             continue
         # for index, row in GWAS_variants_pval.iterrows():
-            # Drop SNPs from GWAS_variants that are neither painted or imputed
-            # if row['POS (hg19)'] not in phase.columns.tolist():  # Check dtypes! POS is string!
-                # try:
-                #     rsID = rsID_mapping.loc[rsID_mapping['Position'] == int(row['POS (hg19)'])]['rsID'].item()
-                # except ValueError:
-                #     print(str(row['POS (hg19)']) + " has not been painted, and can't find rsID info... skipping")
-                #     GWAS_variants_pval.drop(index, inplace=True)  # For SNPs with no rsID found
-                #     continue
-                # if os.path.isfile(args.output_files + rsID + ".hom.1.samples"):
-                #     continue
-                # else:
-                #     print(str(row['POS (hg19)']) + " has not been painted/imputed, so skipping")
-                #     GWAS_variants_pval.drop(index, inplace=True)
+        # Drop SNPs from GWAS_variants that are neither painted or imputed
+        # if row['POS (hg19)'] not in phase.columns.tolist():  # Check dtypes! POS is string!
+        # try:
+        #     rsID = rsID_mapping.loc[rsID_mapping['Position'] == int(row['POS (hg19)'])]['rsID'].item()
+        # except ValueError:
+        #     print(str(row['POS (hg19)']) + " has not been painted, and can't find rsID info... skipping")
+        #     GWAS_variants_pval.drop(index, inplace=True)  # For SNPs with no rsID found
+        #     continue
+        # if os.path.isfile(args.output_files + rsID + ".hom.1.samples"):
+        #     continue
+        # else:
+        #     print(str(row['POS (hg19)']) + " has not been painted/imputed, so skipping")
+        #     GWAS_variants_pval.drop(index, inplace=True)
         # GWAS_variants_pval.reset_index(inplace=True, drop=True)
         if LD_prune:  # Choose lowest p-value per LD block
             print("Finding lowest p-value SNP per independent LD block")

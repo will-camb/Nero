@@ -27,11 +27,11 @@ bootstrap="$8"
 reverse_cols="$9"
 LD_prune="${10}"
 chrlist=$(seq 1 22)
-ancestries="CHG EHG Farmer African EastAsian WHG Yamnaya"
+ancestries="CHG EHG Farmer African EastAsian WHG Yamnaya Steppe"
 
 for chr in $chrlist; do
   for anc in $ancestries; do
-    echo "python3 PRS_calculator_GWAScat.py -copyprobs_file_original $copyprobs_directory_original/$anc.$chr.master_all_copyprobsperlocus.txt.gz -copyprobs_file_imputed $copyprobs_directory_imputed/temp.$anc.$chr.master_all_copyprobsperlocus.txt.gz -phasefile $phasefile_directory/transformed.$chr.merged.phase.gz -idfile $idfile -variants $variants -phenotypes $phenotype_file -output_files $output_files -chr $chr -anc $anc -bootstrap $bootstrap -reverse_cols $reverse_cols -LD_prune $LD_prune" >> PRS_calculator_commands_temp
+    echo "python3 PRS_calculator_GWAScat.py -copyprobs_file_original $copyprobs_directory_original/Yamnaya.$chr.master_all_copyprobsperlocus.txt.gz -copyprobs_file_imputed $copyprobs_directory_imputed/temp.$anc.$chr.master_all_copyprobsperlocus.txt.gz -phasefile $phasefile_directory/transformed.$chr.merged.phase.gz -idfile $idfile -variants $variants -phenotypes $phenotype_file -output_files $output_files -chr $chr -anc $anc -bootstrap $bootstrap -reverse_cols $reverse_cols -LD_prune $LD_prune" >> PRS_calculator_commands_temp
   done
 done
 

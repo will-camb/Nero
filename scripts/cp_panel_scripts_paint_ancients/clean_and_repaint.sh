@@ -1,11 +1,9 @@
 #!/bin/bash
-cd $PBS_O_WORKDIR
-module load anaconda3/4.4.0
 
 chrlist=`seq 1 22`
 for chr in $chrlist; do
     # length=`head -n 1 $chr.master_all_copyprobsperlocus.txt`
-    length=`awk -F ',' 'NR==2 { print $0 }' phasefiles/$chr.merged.phase`
+    length=`awk -F ',' 'NR==2 { print $0 }' phasefiles/filtered.$chr.phase`
     awk -F ',' -v nsnps="$length" 'length($3) == nsnps' $chr.master_all_copyprobsperlocus.txt > temp.$chr.master_all_copyprobsperlocus.txt
     cut -f1 -d"," temp.$chr.master_all_copyprobsperlocus.txt | uniq -c > temp.$chr.counts
 done
@@ -21,7 +19,7 @@ for i in range(1,23):
     painted = pd.read_csv("temp."+str(i)+".counts", sep=" ", header=None, error_bad_lines=False)[[5,6]]
     painted_successfully_list=painted[painted[5].astype(str)=='20'][6].tolist()
     to_paint_temp = np.setdiff1d(ordered_all_pop_ids_mapped_list, painted_successfully_list)
-    to_paint.extend([s for s in to_paint_temp if "UKBB" in s]) # NB only for UKB painting, not ancients!
+    to_paint.extend([s for s in to_paint_temp if "allAncient" in s])
     print("Done assessment of chr " + str(i) + " and results written to to_paint; now processing chr " + str(i+1))
 to_paint = list(set(to_paint))
 chunkcounts_list = pd.read_csv("ordered_all_pop_ids_mapped.allchr.chunkcounts.out", header=None, sep=" ", error_bad_lines=False)[0].tolist()

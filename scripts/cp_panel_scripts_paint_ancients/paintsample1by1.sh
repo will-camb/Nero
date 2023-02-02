@@ -18,12 +18,6 @@ cp_panel_scripts="$4"
 dir="temp.$name"
 chrlist=`seq 1 22`
 nhaps=638
-#module load tools finestructure/4.1.1
-#module load parallel/20200922
-#module load anaconda3/4.4.0
-#module load intel/perflibs
-#module load gcc
-#module load R/3.6.1
 
 for chr in $chrlist; do
   if [ ! -f $chr.master_all_copyprobsperlocus.txt ]; then
@@ -61,15 +55,14 @@ cmd="cp $cp_panel_scripts/* $dir"
 echo "Copying scripts from $cp_panel_scripts"
 $cmd
 echo "Done copying scripts, now making new idfile at $dir"
-{ head -n $number ordered_all_pop_ids_mapped | tail -n 1 && tail -n 318 ordered_all_pop_ids_mapped; } > $dir/ordered_all_pop_ids_mapped
+{ head -n $number ordered_all_pop_ids_mapped | tail -n 1 && tail -n 318 ordered_all_pop_ids_mapped_ref; } > $dir/ordered_all_pop_ids_mapped
 
 phaselinenumber2=$(($phaselinenumber + 1))
 for chr in $chrlist ; do
   touch $dir/phasefiles/$chr.merged.phase
-  head -n 3 phasefiles/$chr.merged.phase > $dir/phasefiles/$chr.merged.phase
-  awk "NR>=$phaselinenumber && NR<=$phaselinenumber2" phasefiles/$chr.merged.phase >> $dir/phasefiles/$chr.merged.phase
-  tail -n 636 phasefiles/$chr.merged.phase >> $dir/phasefiles/$chr.merged.phase
-#  sed -i '' "1s/.*/$nhaps/" $dir/phasefiles/$chr.merged.phase
+  head -n 3 phasefiles/filtered.$chr.phase > $dir/phasefiles/$chr.merged.phase
+  awk "NR>=$phaselinenumber && NR<=$phaselinenumber2" phasefiles/filtered.$chr.phase  >> $dir/phasefiles/$chr.merged.phase
+  tail -n 636 ref_phasefiles/$chr.merged.phase >> $dir/phasefiles/$chr.merged.phase
   sed -i "1s/.*/$nhaps/" $dir/phasefiles/$chr.merged.phase
   echo "Copied lines to $dir/phasefiles/$chr.merged.phase"
   done

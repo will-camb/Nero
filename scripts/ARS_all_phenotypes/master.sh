@@ -22,7 +22,7 @@ set -o errexit
 # ukb_mfi_chrALL_v3.txt.gz - file containing INFO scores for all UKB imputed genotypes (https://biobank.ctsu.ox.ac.uk/crystal/refer.cgi?id=1965) concatenated into one file
 
 if [ "$#" -ne "5" ]; then
-  echo "Usage: master.sh <phenotype> <sum_stats> <copyprobs_location>"
+  echo "Usage: master.sh <phenotype> <sum_stats> <copyprobs_location> <prune> <restrict_to_painted_sites>"
   echo "<phenotype>: The phenotype being calculated"
   echo "<sum_stats>: Name of sum stats file for the specified phenotype, in folder called 'summary_stats'; NB if Neale Lab should already be combined with file variants.tsv.gz. Cols: SNP CHR BP other_allele effect_allele effect_allele_frequency P OR"
   echo "<copyprobs_location>: e.g. /willerslev/ukbiobank/painting_results_aggregate/copyprobs_per_anc/reversed_cols/"
@@ -36,11 +36,11 @@ sum_stats="$2"
 copyprobs_location="$3"
 prune="$4"
 restrict_to_painted_sites=$5
-if ! [ "$prune" = true ] || [ "$prune" = false ]; then
+if [ "$prune" != true ] && [ "$prune" != false ]; then
   echo variable prune must take value true or false! Terminating
   exit 1
 fi
-if ! [ "$restrict_to_painted_sites" = true ] || [ "$restrict_to_painted_sites" = false ]; then
+if [ "$restrict_to_painted_sites" != true ] && [ "$restrict_to_painted_sites" != false ]; then
   echo variable restrict_to_painted_sites must take value true or false! Terminating
   exit 1
 fi
@@ -57,7 +57,7 @@ function load_sum_stats() {
 import pandas as pd
 import os
 
-variants = pd.read_csv(os.environ['PYTHON_ARG1'], dtype={'SNP': 'string', 'CHR': 'int', 'BP': 'int', 'other_allele': 'string',
+variants = pd.read_csv(os.environ['PYTHON_ARG1'], dtype={'SNP': 'string', 'CHR': 'int8', 'BP': 'int32', 'other_allele': 'string',
                               'effect_allele': 'string', 'effect_allele_frequency': 'float', 'P': 'float', 'OR': 'float'},
                               sep=" ")
 variants = variants.loc[variants['effect_allele_frequency'] > 0.01] # MAF
@@ -76,6 +76,7 @@ if os.environ['PYTHON_ARG3'] == 'true':
   variants['temp'] = variants['BP'].astype(str) + "chr" + variants['CHR'].astype(str)
   variants = variants.loc[variants['temp'].isin(painted_sites)]
   variants.drop(['temp'], axis=1, inplace=True)
+
 variants.to_csv(os.environ['PYTHON_ARG1'], index=False, sep=" ")
 for i in range(1,23):
   temp = variants.loc[variants['CHR']==i]
@@ -97,7 +98,7 @@ for i in range(1,23):
      except FileNotFoundError:
              continue
 df_all.to_csv("all_clumped.csv", index=False, sep=" ")
-variants = pd.read_csv(os.environ['PYTHON_ARG'], dtype={'SNP': 'string', 'CHR': 'int', 'BP': 'int', 'other_allele': 'string',
+variants = pd.read_csv(os.environ['PYTHON_ARG'], dtype={'SNP': 'string', 'CHR': 'int8', 'BP': 'int32', 'other_allele': 'string',
                               'effect_allele': 'string', 'effect_allele_frequency': 'float', 'P': 'float', 'OR': 'float'},
                               sep=" ")
 try:
@@ -117,7 +118,7 @@ df = pd.read_csv("all_clumped_annotated.csv", sep=" ")
 with open("impute_commands", "a") as myfile:
     for index,row in df.iterrows():
         for anc in ['CHG', 'WHG','EHG','Farmer','Yamnaya','African','EastAsian']:
-          myfile.write(f"python3 ../impute_ancestry_bp.py -copyprobs_file {os.environ['PYTHON_ARG']}/{anc}.{str(row['CHR'])}.master_all_copyprobsperlocus.txt.gz -bp {str(row['BP'])} -chr {str(row['CHR'])} -anc {anc} -reverse_cols False\n")
+          myfile.write(f"python3 ../../impute_ancestry_bp.py -copyprobs_file {os.environ['PYTHON_ARG']}/{anc}.{str(row['CHR'])}.master_all_copyprobsperlocus.txt.gz -bp {str(row['BP'])} -chr {str(row['CHR'])} -anc {anc} -reverse_cols False\n")
 END
 }
 
@@ -164,7 +165,9 @@ variants_i = variants.loc[variants['CHR']==int(os.environ['PYTHON_ARG2'])]
 if variants_i.empty:
   sys.exit()
 sites = ["ID"] + variants_i['BP'].astype(str).tolist()
-copyprobs = pd.read_csv(f"{os.environ['PYTHON_ARG1']}/{os.environ['PYTHON_ARG3']}.{os.environ['PYTHON_ARG2']}.master_all_copyprobsperlocus.txt.gz", sep=" ", usecols=sites)
+types_dict = {'ID': 'str'}
+types_dict.update({snp: 'int8' for snp in sites if snp not in types_dict})
+copyprobs = pd.read_csv(f"{os.environ['PYTHON_ARG1']}/{os.environ['PYTHON_ARG3']}.{os.environ['PYTHON_ARG2']}.master_all_copyprobsperlocus.txt.gz", sep=" ", usecols=sites, dtype=types_dict)
 copyprobs.to_csv(f"imputed/temp.{os.environ['PYTHON_ARG3']}.{os.environ['PYTHON_ARG2']}.master_all_copyprobsperlocus.txt.gz", index=False)
 END
 }
@@ -179,9 +182,9 @@ END
 
 # a.	Load sum stats
 # b.	Filter for MAF, INFO, OPTIONAL painted sites
-echo Loading sum stats and filtering for "$phenotype"
+echo Loading sum stats and filtering variants by MAF and INFO for phenotype "$phenotype"
 load_sum_stats "$sum_stats" "$copyprobs_location" "$restrict_to_painted_sites"
-echo Done loading sum stats and filtering for "$phenotype"
+echo Done loading sum stats and filtering for phenotype "$phenotype"
 
 if [ "$prune" = true ]; then
   # c.	Filter 1KG pops for these
@@ -207,6 +210,12 @@ if [ "$prune" = true ]; then
   echo 'File all_clumped_annotated.csv does not exist, exiting. Likely due to no SNPs passing p-value threshold.'
   exit 1
   fi
+
+  # if less than 5 SNPs, exit
+  if wc -l all_clumped_annotated.csv < 5; then
+    echo 'Too few SNPs after clumping (<5), so exiting'
+    exit 1
+  fi
 fi
 
 if [ "$prune" = false ]; then
@@ -216,6 +225,14 @@ if [ "$prune" = false ]; then
 fi
 echo 'Done aggregating, now imputing ancestry if required (i.e. if restrict_to_painted_sites is false)'
 
+# Exit if number of SNPs is below threshold:
+num_snps=$(wc -l < all_clumped_annotated.csv)
+if [ "$num_snps" -le 5 ]; then
+  echo Not enough SNPs in all_clumped_annotated.csv, probably because not enough pass genome-wide significance. Exiting.
+  cd ../
+  rm -r "$phenotype"
+  exit 1
+fi
 # 2.  Impute ancestry for missing SNPs
 # a.  Impute sites separately
 # b.  Concatenate results to master copyprobs file
@@ -224,7 +241,7 @@ if [ "$restrict_to_painted_sites" = false ]; then
   # a.  Impute sites separately
   touch impute_commands
   make_impute_sites_commands "$copyprobs_location"
-  cat impute_commands | parallel --bibtex -j 60
+  cat impute_commands | parallel -j 60
   # b.  Concatenate results to master copyprobs file
   concat_impute_results
 fi
@@ -237,7 +254,7 @@ if [ "$restrict_to_painted_sites" = true ]; then
   cat make_unimputed_copyprobs_commands | parallel  -j 60
   rm make_unimputed_copyprobs_commands
 fi
-echo Done imputation, now calculating homozygous individuals
+echo Done imputation if specified, now calculating homozygous individuals
 
 # 3.	Get homozygous individuals
 mkdir non_phased_snps || true
@@ -255,7 +272,7 @@ echo Done! Now running PRS calculator
 cp ../../PRS_calculator_v4.py PRS_calculator_v4.py
 bash ../../run_PRS_calculator_v4.sh imputed non_phased_snps/output_files/ all_clumped_annotated.csv False False &>stdout.file
 mv PRS_calculations_v4 PRS_calculations_v4_"$phenotype"
-mkdir ../../results_files
+mkdir ../../results_files || true
 cp PRS_calculations_v4_"$phenotype" ../../results_files/PRS_calculations_v4_"$phenotype"
 rm *.clumped.*
 echo Job complete! Results are in PRS_calculations_v4_"$phenotype"

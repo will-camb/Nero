@@ -116,7 +116,7 @@ if reverse_cols:  # For copyprobs files with incorrectly ordered columns
     print("You have indicated cols in copyprobs files are incorrectly ordered")
     col_names = pd.read_csv(str(args.copyprobs_file_imputed), sep=" ", nrows=0).columns
     types_dict = {'0': str}
-    types_dict.update({col: 'float' for col in col_names if col not in types_dict})
+    types_dict.update({col: 'float16' for col in col_names if col not in types_dict})
     anc_copyprobs = pd.read_csv(str(args.copyprobs_file_imputed), sep=" ", dtype=types_dict)
     anc_copyprobs.set_index("0", inplace=True)
     anc_copyprobs.columns = anc_copyprobs.columns.tolist()[::-1]  # Reverse column names because they are mis-labelled;
@@ -125,7 +125,7 @@ else:  # For correctly labelled cols in copyprobs
     print("You have indicated cols in copyprobs files are correctly ordered")
     col_names = pd.read_csv(str(args.copyprobs_file_imputed), nrows=0).columns
     types_dict = {'ID': str}
-    types_dict.update({col: 'float' for col in col_names if col not in types_dict})
+    types_dict.update({col: 'float16' for col in col_names if col not in types_dict})
     anc_copyprobs = pd.read_csv(str(args.copyprobs_file_imputed), dtype=types_dict)
     anc_copyprobs.set_index("ID", inplace=True)
 copyprobs_haps = list()
@@ -134,7 +134,7 @@ for h in range(int(anc_copyprobs.shape[0] / 2)):
 print("*** Successfully loaded copyprobs file for " + args.anc + " chr" + str(args.chr) + "***")
 variants = pd.read_csv(args.variants,
                        usecols=['SNP', 'CHR', 'BP', 'other_allele', 'effect_allele', 'effect_allele_frequency', 'P', 'OR'],
-                       dtype={'SNP': 'string', 'CHR': 'int', 'BP': 'int', 'other_allele': 'string',
+                       dtype={'SNP': 'string', 'CHR': 'int8', 'BP': 'int32', 'other_allele': 'string',
                               'effect_allele': 'string', 'effect_allele_frequency': 'float', 'P': 'float', 'OR': 'float'},
                        sep=" ")
 variants = variants.loc[variants['CHR'] == int(args.chr)]

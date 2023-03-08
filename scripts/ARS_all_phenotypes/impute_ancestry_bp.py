@@ -37,7 +37,7 @@ else:  # For correctly labelled cols in copyprobs:
             if snp in painted_snp_list:
                 temp_anc_copyprobs = pd.read_csv(args.copyprobs_file, sep=" ",
                                                  usecols=['ID', str(snp)],
-                                                 dtype={'ID': str, str(snp): 'float'}).set_index("ID", drop=True)
+                                                 dtype={'ID': str, str(snp): 'int8'}).set_index("ID", drop=True)
                 df.loc[:, snp] = temp_anc_copyprobs[str(snp)]
             else:
                 painted_snp_list.append(snp)

@@ -46,7 +46,6 @@ def analyse_anc(merged_phase_copyprobs_temp, anc, chrom, pval, iteration, phenot
                   (i, 'copyprobs')].sum()
         output.at[i, 'alt'] = alt_sum
         output.at[i, 'ref'] = ref_sum
-    #  NB probably a better idea to take average not sum here, as in ms_PRS_analysis.py
     output['maf'] = output['alt'] / (output['alt'] + output['ref'])
     output['maf'] = output['maf'].fillna(0)
     output = output.reset_index().rename(columns={'index': 'pos'})

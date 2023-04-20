@@ -20,7 +20,7 @@ counts = pd.DataFrame(anc_copyprobs.index.value_counts())
 to_drop = counts.loc[counts[0] != 20].index.tolist()
 anc_copyprobs.drop(to_drop, inplace=True)
 
-anc_copyprobs.to_csv(f"tranformed_copyprobs/{args.chr}.master_all_copyprobsperlocus.txt.gz", compression='gzip')
+anc_copyprobs.to_csv(f"transformed_copyprobs/{args.chr}.master_all_copyprobsperlocus.txt.gz", compression='gzip')
 print(
     f"Saving transformed file (space separated, positions added as header in correct (reverse) order) as "
-    f"tranformed_copyprobs/{args.chr}.master_all_copyprobsperlocus.txt.gz")
+    f"transformed_copyprobs/{args.chr}.master_all_copyprobsperlocus.txt.gz")

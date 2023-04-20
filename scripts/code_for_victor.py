@@ -68,7 +68,7 @@ phase_sum = merged_phase_copyprobs.loc[:, (slice(None), 'phase')].sum().tolist()
 for n, i in enumerate(list_of_SNPs):
     phase_sum_dict[i] = phase_sum[n]
 
-# If we have a mapping of whether we want the 0 or 1 values from the phasefile, we can access the corresponeding values in the copyprobs column for a given SNP:
+# If we have a mapping of whether we want the 0 or 1 values from the phasefile, we can access the corresponding values in the copyprobs column for a given SNP:
 # Where i is the SNP position we want (as a string)
 # phase_val is a 0 or 1 depending on which we want to select
 merged_phase_copyprobs.loc[merged_phase_copyprobs[i]['phase'] == phase_val].loc[:,(i, 'copyprobs')]

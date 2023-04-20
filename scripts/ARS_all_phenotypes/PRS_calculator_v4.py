@@ -8,6 +8,7 @@ import argparse
 import os
 import numpy as np
 import sys
+pd.options.mode.chained_assignment = None
 
 
 def analyse_anc(anc_copyprobs_temp_, anc, chrom, pval, iteration, list_of_SNPs_, GWAS_variants_pval_):
@@ -48,6 +49,7 @@ def analyse_anc(anc_copyprobs_temp_, anc, chrom, pval, iteration, list_of_SNPs_,
                 alt_mapping[i] = 1
             else:
                 alt_mapping[i] = 0
+        anc_copyprobs_temp_i[str(i)] = anc_copyprobs_temp_i[str(i)].astype('float64')
         if alt_mapping[i] == 0:
             alt_sum = anc_copyprobs_temp_i.loc[anc_copyprobs_temp_i['ID'].isin(samples_0[0].tolist())][str(i)].sum()
             ref_sum = anc_copyprobs_temp_i.loc[anc_copyprobs_temp_i['ID'].isin(samples_1[0].tolist())][str(i)].sum()

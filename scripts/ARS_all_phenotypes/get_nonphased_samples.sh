@@ -1,5 +1,8 @@
 #!/bin/bash
-source /willerslev/software/venv_python3.6/bin/activate
+module load bgen/1.1.4
+module load perl/5.38.0
+module load gsl/2.5
+module load bcftools/1.16
 
 if [ "$#" -ne "2" ] ; then
     echo "Usage: get_nonphased_samples.sh <rsID> <chr>"
@@ -11,7 +14,12 @@ fi
 rsID="$1"
 chr="$2"
 
-bgenix -g /willerslev/ukbiobank/imputation_bgen/ukb_imp_chr"$chr"_v3.bgen  -incl-rsids "$rsID" -vcf > "$rsID".vcf
+if [ -f output_files/"$rsID".hom.1.samples ]; then
+    echo "$rsID.hom.1.samples already exists! Skipping"
+    exit 0
+fi
+
+bgenix -g /maps/datasets/ukb-AUDIT/imputation_bgen/ukb_imp_chr"$chr"_v3.bgen  -incl-rsids "$rsID" -vcf > "$rsID".vcf
 bgzip "$rsID".vcf
 tabix "$rsID".vcf.gz
 pbwt -readVcfGT "$rsID".vcf.gz -writeVcf "$rsID".GT.vcf

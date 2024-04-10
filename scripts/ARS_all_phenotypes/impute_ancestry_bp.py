@@ -55,13 +55,12 @@ else:  # For correctly labelled cols in copyprobs:
                         1 - (D2 / (D1 + D2))) * temp_anc_copyprobs.iloc[:, 1]
                 df.loc[:, snp] = temp_anc_copyprobs[snp]
         return df
-
-
-    print("You have indicated that the columns in copyprobs are correctly labelled")
     Path("imputed/").mkdir(parents=True, exist_ok=True)
-    if Path("imputed/temp." + str(args.anc) + "." + str(args.chr) + ".master_all_copyprobsperlocus.txt.gz").is_file():
-        print("temp." + str(args.anc) + "." + str(args.chr) + ".master_all_copyprobsperlocus.txt.gz already imputed")
+    if Path("imputed/temp." + str(args.bp) + "." + str(args.anc) + ".master_all_copyprobsperlocus.txt.gz").is_file():
+        print("imputed/temp." + str(args.bp) + "." + str(args.anc) + ".master_all_copyprobsperlocus.txt.gz already "
+                                                                     "imputed")
         sys.exit()
+    print("You have indicated that the columns in copyprobs are correctly labelled")
     painted_snp_list = pd.read_csv(str(args.copyprobs_file), sep=" ", nrows=0).columns.tolist()  # descending=correct
     del painted_snp_list[0]
     painted_snp_list = [int(x) for x in painted_snp_list]

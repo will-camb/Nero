@@ -8,8 +8,8 @@ module load plink/2.0.0
 # 1000g and IA
 ref_dir="/maps/projects/lundbeck/scratch/vrb229/Project_IronAge/data/230905_impute_iadk/merge/vcf/"
 target_dir="/projects/lundbeck/data/1000genomes_2015_nature"
-ref_samples="ref_samples.txt"  # Update
-target_samples="1000g_samples"
+ref_samples="ref_samples.txt"
+target_samples="1000g_samples_european_ids" # Or 1000g_samples for all samples in vcf
 output_dir="genetic_data"
 refname2id="refname2id"
 bcftools query -l $target_dir/22.1000g.freeze9.umich.GRCh37.snps.biallelic.pass.vcf.gz > 1000g_samples
@@ -41,3 +41,5 @@ export output_dir ref_dir target_dir refname2id keep_samples target_samples ref_
 
 # Use GNU Parallel to run the function for each chromosome
 parallel process_chromosome ::: {1..22}
+
+bcftools query -l $output_dir/target.22.vcf.gz > target_samples_ordered

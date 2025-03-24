@@ -195,7 +195,7 @@ import pandas as pd
 import os
 
 df = pd.read_csv("all_clumped_annotated.csv", sep=" ")
-with open("impute_commands", "a") as myfile:
+with open("impute_commands", "w") as myfile:
     for index,row in df.iterrows():
         for anc in ['CHG', 'WHG','EHG','Farmer','Yamnaya','African','EastAsian']:
           myfile.write(f"python3 ../../impute_ancestry_bp.py -copyprobs_file {os.environ['PYTHON_ARG']}/{anc}.{str(row['CHR'])}.master_all_copyprobsperlocus.txt.gz -bp {str(row['BP'])} -chr {str(row['CHR'])} -anc {anc} -reverse_cols False\n")
@@ -339,5 +339,4 @@ bash ../../run_PRS_calculator_v4.sh imputed non_phased_snps/output_files/ all_cl
 mv PRS_calculations_v4 PRS_calculations_v4_"$phenotype"
 mkdir ../../results_files || true
 cp PRS_calculations_v4_"$phenotype" ../../results_files/PRS_calculations_v4_"$phenotype"
-rm *.clumped.*
 echo '*** Job complete! Results are in PRS_calculations_v4_"$phenotype" ***'

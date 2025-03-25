@@ -307,7 +307,7 @@ if [ "$restrict_to_painted_sites" = false ]; then
   # a.  Impute sites separately
   touch impute_commands
   make_impute_sites_commands "$copyprobs_location"
-  cat impute_commands | parallel -j 30
+  cat impute_commands | parallel -j 50
   # b.  Concatenate results to master copyprobs file
   concat_impute_results
 fi

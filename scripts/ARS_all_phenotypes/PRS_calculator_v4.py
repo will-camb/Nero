@@ -155,7 +155,7 @@ for p in [5e-8]:
         anc_copyprobs_temp = anc_copyprobs_temp.reset_index()
     anc_copyprobs_temp['haps'] = copyprobs_haps
     if bootstrap:
-        for bs in range(1000):
+        for bs in range(100):
             anc_copyprobs_temp_bs = anc_copyprobs_temp.sample(n=anc_copyprobs_temp.shape[0], replace=True)
             analyse_anc(anc_copyprobs_temp_bs, str(args.anc), args.chr, p, bs, list_of_SNPs, GWAS_variants_pval)
     else:

@@ -205,18 +205,31 @@ END
 function concat_impute_results() {
   python3 <<END
 import pandas as pd
+from multiprocessing import Pool
 
 variants = pd.read_csv("all_clumped_annotated.csv", sep=" ")
 random_variant = variants.iloc[0]['BP'].item()
-for anc in ['CHG', 'WHG','EHG','Farmer','Yamnaya','African','EastAsian']:
-    for i in range(1,23):
+
+def process_ancestry_and_chromosome(args):
+    anc, i = args
+    try:
         new_df = pd.DataFrame(index=pd.read_csv(f"imputed/temp.{random_variant}.Yamnaya.master_all_copyprobsperlocus.txt.gz", index_col="ID").index)
-        variants_i = variants.loc[variants['CHR']==i]
+        variants_i = variants.loc[variants['CHR'] == i]
         sites = variants_i['BP'].tolist()
         for site in sites:
             temp = pd.read_csv(f"imputed/temp.{site}.{anc}.master_all_copyprobsperlocus.txt.gz", index_col="ID")
             new_df = pd.concat([new_df, temp], axis=1)
         new_df.to_csv(f"imputed/temp.{anc}.{i}.master_all_copyprobsperlocus.txt.gz")
+    except Exception as e:
+        print(f"Error processing {anc} chromosome {i}: {e}")
+
+ancestries = ['CHG', 'WHG', 'EHG', 'Farmer', 'Yamnaya', 'African', 'EastAsian']
+args_list = [(anc, i) for anc in ancestries for i in range(1, 23)]
+
+# Use multiprocessing to parallelize the tasks
+if __name__ == "__main__":
+    with Pool() as pool:
+        pool.map(process_ancestry_and_chromosome, args_list)
 END
 }
 
@@ -337,6 +350,9 @@ echo '**Done! Now running PRS calculator**'
 cp ../../PRS_calculator_v4.py PRS_calculator_v4.py
 bash ../../run_PRS_calculator_v4.sh imputed non_phased_snps/output_files/ all_clumped_annotated.csv False False &>stdout.file
 mv PRS_calculations_v4 PRS_calculations_v4_"$phenotype"
+# Run individual bootstrap
+bash ../../run_PRS_calculator_v4.sh imputed non_phased_snps/output_files/ all_clumped_annotated.csv True False &>stdout_indbootstrap.file
+mv PRS_calculations_v4 PRS_calculations_v4_"$phenotype"_indbootstrap
 mkdir ../../results_files || true
-cp PRS_calculations_v4_"$phenotype" ../../results_files/PRS_calculations_v4_"$phenotype"
+cp PRS_calculations_v4_"$phenotype"_indbootstrap ../../results_files/PRS_calculations_v4_"$phenotype"_indbootstrap
 echo '*** Job complete! Results are in PRS_calculations_v4_"$phenotype" ***'

@@ -26,7 +26,7 @@ for i in range(1,23):
 to_paint = list(set(to_paint))
 chunkcounts_list = pd.read_csv("ordered_all_pop_ids_mapped.allchr.chunkcounts.out", header=None, sep=" ", on_bad_lines='skip')[0].tolist()
 chunklengths_list = pd.read_csv("ordered_all_pop_ids_mapped.allchr.chunklengths.out", header=None, sep=" ", on_bad_lines='skip')[0].tolist()
-regionchunkcounts_list = pd.read_csv("ordered_all_pop_ids_mapped.allchr.regionchunkcounts.out", header=None, sep=" ", on_bad_lines='skip')[0].tolist()
+regionchunkcounts_list = pd.read_csv("ordered_all_pop_ids_mapped.allchr.regionchunkcounts.out", header=None, sep=" ", ='skip')[0].tolist()
 regionsquaredchunkcounts_list = pd.read_csv("ordered_all_pop_ids_mapped.allchr.regionsquaredchunkcounts.out", header=None, sep=" ", on_bad_lines='skip')[0].tolist()
 mutationprobs_list = pd.read_csv("ordered_all_pop_ids_mapped.allchr.mutationprobs.out", header=None, sep=" ", on_bad_lines='skip')[0].tolist()
 to_paint.extend([s for s in np.setdiff1d(ordered_all_pop_ids_mapped_list, chunkcounts_list) if "UKBB" in s])

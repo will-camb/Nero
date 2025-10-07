@@ -12,12 +12,12 @@ args = parser.parse_args()
 
 positions = pd.read_csv(f"{args.phasefiles_location}/filtered.{args.chr}.phase", skiprows=2, nrows=1, sep=" ",
                         header=None).T.drop(0)
-anc_copyprobs = pd.read_csv(f"{args.chr}.master_all_copyprobsperlocus.txt", header=None, index_col=0)
+anc_copyprobs = pd.read_csv(f"{args.chr}.master_all_copyprobsperlocus.txt", header=None, index_col=0, skiprows=1, on_bad_lines='warn'))
 anc_copyprobs = anc_copyprobs[2].dropna().apply(lambda x: pd.Series(list(x))).apply(pd.to_numeric)
 anc_copyprobs.columns = positions[0].tolist()[::-1]
 
 counts = pd.DataFrame(anc_copyprobs.index.value_counts())
-to_drop = counts.loc[counts[0] != 20].index.tolist()
+to_drop = counts.loc[counts['count'] != 20].index.tolist()
 anc_copyprobs.drop(to_drop, inplace=True)
 
 anc_copyprobs.to_csv(f"transformed_copyprobs/{args.chr}.master_all_copyprobsperlocus.txt.gz", compression='gzip')

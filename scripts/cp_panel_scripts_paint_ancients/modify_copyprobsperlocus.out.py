@@ -20,5 +20,6 @@ for n, i in enumerate(cols):
     copyprobsDF.loc[mask, cols[n]] = np.vectorize(d.get)(np.digitize(copyprobsDF_valid[cols[n]].astype('float64'), bins))
 copyprobsDF.iloc[Hap_start_sites[0]] = str(copyprobsDF.iloc[Hap_start_sites[0]][1]) + "," + str(int(copyprobsDF.iloc[Hap_start_sites[0]][0])) + ","
 copyprobsDF.iloc[Hap_start_sites[1]] = str(copyprobsDF.iloc[Hap_start_sites[1]][1]) + "," + str(int(copyprobsDF.iloc[Hap_start_sites[1]][0])) + ","
-transposed_copyprobsDF = copyprobsDF.iloc[0:Hap_start_sites[1]].T.append(copyprobsDF.iloc[Hap_start_sites[1]:].reset_index(drop=True).T)
+transposed_copyprobsDF = pd.concat([copyprobsDF.iloc[0:Hap_start_sites[1]].T, copyprobsDF.iloc[Hap_start_sites[1]:].reset_index(drop=True).T], ignore_index=True)
+# transposed_copyprobsDF = copyprobsDF.iloc[0:Hap_start_sites[1]].T.append(copyprobsDF.iloc[Hap_start_sites[1]:].reset_index(drop=True).T)
 transposed_copyprobsDF.to_csv(args.copyprobsperlocus_location, index=False, header=False, sep=" ")

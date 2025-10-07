@@ -306,8 +306,8 @@ echo '**Done aggregating, now imputing ancestry if required (i.e. if restrict_to
 # Exit if number of SNPs is below threshold:
 num_snps=$(tail -n +2 all_clumped_annotated.csv | wc -l)
 echo "Total number of SNPs used: $num_snps"
-if [ "$num_snps" -le 5 ]; then
-  echo 'Not enough SNPs in all_clumped_annotated.csv (<=5), probably because not enough pass genome-wide significance. Exiting script.'
+if [ "$num_snps" -le 3 ]; then
+  echo 'Not enough SNPs in all_clumped_annotated.csv (<=3), probably because not enough pass genome-wide significance. Exiting script.'
   cd ../
   rm -r "$phenotype"
   exit 1
@@ -353,6 +353,8 @@ mv PRS_calculations_v4 PRS_calculations_v4_"$phenotype"
 # Run individual bootstrap
 bash ../../run_PRS_calculator_v4.sh imputed non_phased_snps/output_files/ all_clumped_annotated.csv True False &>stdout_indbootstrap.file
 mv PRS_calculations_v4 PRS_calculations_v4_"$phenotype"_indbootstrap
+
 mkdir ../../results_files || true
+cp PRS_calculations_v4_"$phenotype" ../../results_files/PRS_calculations_v4_"$phenotype"
 cp PRS_calculations_v4_"$phenotype"_indbootstrap ../../results_files/PRS_calculations_v4_"$phenotype"_indbootstrap
 echo '*** Job complete! Results are in PRS_calculations_v4_"$phenotype" ***'

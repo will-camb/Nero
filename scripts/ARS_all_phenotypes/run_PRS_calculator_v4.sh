@@ -1,7 +1,8 @@
 #!/bin/bash
 #cd $PBS_O_WORKDIR
 #module load anaconda3/4.4.0
-source /willerslev/software/venv_python3.6/bin/activate
+#source /willerslev/software/venv_python3.6/bin/activate
+
 
 if [ "$#" -ne "5" ] ; then
     echo "Usage: run_PRS_calculator.sh <copyprobs_directory_imputed> <idfile> <output_files> <variants> <bootstrap True/False> <reverse_cols True/False>"

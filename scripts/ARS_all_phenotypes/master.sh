@@ -24,7 +24,7 @@ if [ "$#" -ne "7" ]; then
   echo "Usage: master.sh <phenotype> <sum_stats> <copyprobs_location> <prune> <restrict_to_painted_sites>"
   echo "<phenotype>: The phenotype being calculated"
   echo "<sum_stats>: Name of sum stats file for the specified phenotype, in folder called 'summary_stats'; NB if Neale Lab should already be combined with file variants.tsv.gz. Cols: SNP CHR BP other_allele effect_allele effect_allele_frequency P OR"
-  echo "<copyprobs_location>: e.g. /willerslev/ukbiobank/painting_results_aggregate/copyprobs_per_anc/reversed_cols/"
+  echo "<copyprobs_location>: e.g. /datasets/ukb-AUDIT/painting_results_aggregate/copyprobs_per_anc/reversed_cols/"
   echo "<prune>: Whether to LD-prune the summary stats using plink; must take values either 'true' or 'false'"
   echo "<restrict_to_painted_sites>: Whether to restrict to painted sites; this option speeds up compute time significantly as no need to impute painting scores, but reduces the number of SNPs available for computation. Must take values 'true' or 'false'. NB Only runs if also LD-pruning!"
   echo "<restrict_to_path_sites>: Whether to restrict to sites included in the paths analysis (Pearson et al 2023). Must take values 'true' or 'false'. NB Only runs if also LD-pruning!"
@@ -60,7 +60,7 @@ fi
 # Define other constants
 CHR_LIST=$(seq 1 22)
 ANC_LIST="CHG WHG EHG Farmer Yamnaya African EastAsian"
-VCF_PATH="/willerslev/datasets/1000_Genomes_phase3_v5a/individual_chromosomes" # Named as chr"$chr".1kg.phase3.v5a.vcf.gz
+VCF_PATH="/maps/projects/lundbeck/data/1000genomes_2015_nature" # Named as "$chr.1000g.freeze9.umich.GRCh37.snps.biallelic.pass.vcf.gz"
 LD_IDS="/datasets/ukb-AUDIT/painting_results_aggregate/PRS_calculation/all_phenotypes/GBR-FIN-TSI_ids.txt"
 imputed_calls="/datasets/ukb-AUDIT/painting_results_aggregate/PRS_calculation/all_phenotypes/ukb_mfi_chrALL_v3.txt.gz"
 #/maps/datasets/ukb-AUDIT/imputation_bgen/ukb_mfi_chrALL_v3.txt
@@ -122,7 +122,7 @@ END
 }
 
 function run_ld_pruning() {
-  for chr in $CHR_LIST; do plink --vcf "$VCF_PATH"/chr"$chr".1kg.phase3.v5a.vcf.gz --extract "$chr".rsids --keep $LD_IDS -make-bed --out "$chr".plink & done
+  for chr in $CHR_LIST; do plink --vcf "$VCF_PATH"/"$chr".1000g.freeze9.umich.GRCh37.snps.biallelic.pass.vcf.gz --extract "$chr".rsids --keep $LD_IDS -make-bed --out "$chr".plink & done
   wait
   for chr in $CHR_LIST; do cut -f 2 "$chr".plink.bim | sort | uniq -d >"$chr".dups & done
   wait

@@ -19,6 +19,7 @@ UKB_HAPLOTYPE=$(grep "ukb_haplotype:" $CONFIG_FILE | head -1 | awk '{print $2}' 
 UKB_CHR_MAP=$(grep "ukb_chr_rename_map:" $CONFIG_FILE | head -1 | awk '{print $2}' | tr -d '"')
 UKB_SAMPLES=$(grep "ukb_samples_file:" $CONFIG_FILE | head -1 | awk '{print $2}' | tr -d '"')
 CHROMOSOMES=$(grep "chromosomes:" $CONFIG_FILE | grep -oP '\[\K[0-9, ]+' | tr -d '[]')
+PBWT=$(grep "pbwt:" $CONFIG_FILE | head -1 | awk '{print $2}' | tr -d '"')
 
 INFO_THRESH=$(grep "info_threshold:" $CONFIG_FILE | awk '{print $2}')
 MAF_THRESH=$(grep "maf_global:" $CONFIG_FILE | awk '{print $2}')
@@ -59,26 +60,32 @@ for CHR in $(echo $CHROMOSOMES | tr ',' ' '); do
     UKB_VCF_CHR="${UKB_HAPLOTYPE//\{chrom\}/$CHR}"
     UKB_MAP_CHR="${UKB_CHR_MAP//\{chrom\}/$CHR}"
     
-    # Step 1: Preprocess UKB VCF (add chr info and sample names)
+    # Step 1: Preprocess UKB VCF (extract hard calls, add chr info and sample names)
     echo "Step 1: Preprocessing UKB VCF for chr$CHR..."
-    
+
     UKB_PROCESSED="$OUTPUT_BASE/data/processed/ukb/chr${CHR}.ukb.vcf.gz"
-    
+
     if [ ! -f "$UKB_PROCESSED" ]; then
+        echo "  Extracting hard calls (GT) with pbwt..."
+        $PBWT -readVcfGT $UKB_VCF_CHR \
+            -writeVcf $OUTPUT_BASE/data/processed/ukb/chr${CHR}.GT.vcf.gz
+
         echo "  Adding chromosome info..."
-        bcftools annotate $UKB_VCF_CHR \
+        bcftools annotate $OUTPUT_BASE/data/processed/ukb/chr${CHR}.GT.vcf.gz \
             --rename-chrs $UKB_MAP_CHR \
-            -Oz -o $OUTPUT_BASE/data/processed/ukb/chr${CHR}.temp1.vcf.gz
-        
-        echo "  Adding sample names..."
+            -Oz -o $OUTPUT_BASE/data/processed/ukb/chr${CHR}.GT.chrinfo.vcf.gz
+
+        echo "  Adding sample names and finalizing..."
         bcftools reheader \
             --samples $UKB_SAMPLES \
-            $OUTPUT_BASE/data/processed/ukb/chr${CHR}.temp1.vcf.gz \
+            $OUTPUT_BASE/data/processed/ukb/chr${CHR}.GT.chrinfo.vcf.gz \
             -o $UKB_PROCESSED
-        
+
         tabix -p vcf $UKB_PROCESSED
-        
-        rm $OUTPUT_BASE/data/processed/ukb/chr${CHR}.temp1.vcf.gz
+
+        # Clean up intermediate files
+        rm $OUTPUT_BASE/data/processed/ukb/chr${CHR}.GT.vcf.gz
+        rm $OUTPUT_BASE/data/processed/ukb/chr${CHR}.GT.chrinfo.vcf.gz
         echo "  ✓ Created $UKB_PROCESSED"
     else
         echo "  ✓ Already exists: $UKB_PROCESSED"

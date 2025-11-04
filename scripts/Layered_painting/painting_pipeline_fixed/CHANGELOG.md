@@ -1,6 +1,175 @@
 # Changelog
 
-## Version 1.1 - Fixed (Current Release)
+## Version 1.2 - Bug Fixes and Complete Layer Configurations (Current Release)
+
+### 🔴 Critical Bug Fixes
+
+#### 1. Syntax Error in run_pipeline.sh
+- **Location**: Line 167
+- **Problem**: Used Python syntax (`else:`) instead of bash syntax
+- **Impact**: Script would crash when running the postprocess command
+- **Solution**: Changed to correct bash syntax (`else`)
+- **Files Modified**: `run_pipeline.sh`
+
+#### 2. Broken Python Script Execution in 08_merge_results.sh
+- **Location**: Lines 42-77 and 90-123
+- **Problem**: Heredoc Python scripts weren't being executed properly
+- **Impact**: Result merging would fail silently or with cryptic errors
+- **Solution**: Changed to create temporary Python scripts, execute them, and clean up
+- **Files Modified**: `scripts/phase2_layer_painting/08_merge_results.sh`
+
+**Before:**
+```bash
+python3 << 'EOF'
+...python code...
+EOF
+python3 -c "$(cat)" $ARGS  # This doesn't work
+```
+
+**After:**
+```bash
+TEMP_SCRIPT=$(mktemp)
+cat > $TEMP_SCRIPT << 'EOF'
+...python code...
+EOF
+python3 $TEMP_SCRIPT $ARGS
+rm $TEMP_SCRIPT
+```
+
+#### 3. Sample List Naming Mismatch in extract_sample_lists.py
+- **Location**: Lines 42-50
+- **Problem**: Created files like `IA.Denmark.txt` but layer configs expected `IA.Denmark.1575-900BP.txt`
+- **Impact**: Sample files wouldn't match layer configuration expectations
+- **Solution**: Now preserves full population names including time ranges (stops at classifier codes with underscores)
+- **Files Modified**: `scripts/utils/extract_sample_lists.py`
+
+**Before:**
+```python
+safe_pop = pop.split('.')[0:2]  # Takes only "IA.Denmark"
+```
+
+**After:**
+```python
+# Preserves "IA.Denmark.1575-900BP" from "IA.Denmark.1575-900BP.XpcCWC.0_1_3"
+parts = pop.split('.')
+pop_name_parts = []
+for part in parts:
+    if '_' in part or part.isdigit():
+        break
+    pop_name_parts.append(part)
+safe_pop = '.'.join(pop_name_parts)
+```
+
+#### 4. Path Inconsistencies
+- **Problem**: Genetic map path used `{i}` instead of `{chrom}`
+- **Solution**: Standardized all path templates to use `{chrom}`
+- **Files Modified**: `config/master_config.yaml`
+
+**Before:**
+```yaml
+genetic_maps: "/path/genetic_map_GRCh37_chr{i}.txt"
+```
+
+**After:**
+```yaml
+genetic_maps: "/path/genetic_map_GRCh37_chr{chrom}.txt"
+```
+
+#### 5. Redundant Module Loads
+- **Problem**: Modules loaded twice in `run_layer.sh`
+- **Solution**: Removed duplicate module load commands at the beginning of the script
+- **Files Modified**: `scripts/phase2_layer_painting/run_layer.sh`
+
+### ⚙️ Configuration Updates
+
+#### Test Chromosome Changed
+- **Changed**: Default test chromosome from chr6 to chr22
+- **Reason**: Chr22 is smaller and faster for initial testing
+- **Duration Impact**: Phase 1: 30-60 min → 20-40 min; Phase 2: 24-48 hrs → 16-32 hrs
+- **Files Modified**: `config/master_config.yaml`, documentation
+
+#### Lambda Parameter Updated
+- **Changed**: Default lambda from 25.7926 to 50
+- **Location**: `scripts/phase2_layer_painting/05_estimate_lambda.sh`
+- **Note**: Still hardcoded, will parse from SparsePainter output in future version
+- **Comment Added**: Clearer documentation about future plans to parse actual value
+
+#### Number of Layers Updated
+- **Changed**: `n_layers` from 1 to 5 in `config/master_config.yaml`
+- **Reason**: All 5 layer configurations now exist
+
+### 🆕 New Features
+
+#### Complete Layer Configurations
+Added placeholder configurations for all temporal layers:
+
+**Layer 2: Bronze Age (2800-4500 BP)**
+- Config file: `config/layers/layer2_config.yaml`
+- Sample populations:
+  - BA.Britain.4500-2800BP
+  - BA.CentralEurope.4500-2800BP
+  - BA.Iberia.4500-2800BP
+  - BA.Steppe.4500-2800BP
+
+**Layer 3: Neolithic (4500-8000 BP)**
+- Config file: `config/layers/layer3_config.yaml`
+- Sample populations:
+  - Neolithic.Britain.8000-4500BP
+  - Neolithic.Anatolia.8000-4500BP
+  - Neolithic.CentralEurope.8000-4500BP
+  - Neolithic.Iberia.8000-4500BP
+
+**Layer 4: Mesolithic (8000-12000 BP)**
+- Config file: `config/layers/layer4_config.yaml`
+- Sample populations:
+  - Mesolithic.WHG.12000-8000BP (Western Hunter-Gatherers)
+  - Mesolithic.EHG.12000-8000BP (Eastern Hunter-Gatherers)
+  - Mesolithic.SHG.12000-8000BP (Scandinavian Hunter-Gatherers)
+  - Mesolithic.Caucasus.12000-8000BP (Caucasus Hunter-Gatherers)
+
+#### Sample Directory Structure
+- Created directories: `config/samples/layer{2,3,4}/`
+- Added README.md files in each directory explaining how to create sample files
+- Documented required `ref_popfile.txt` format
+- Explained how to run `extract_sample_lists.py`
+
+#### Phase 3 Handling Improved
+- Removed Phase 3 from main `full` workflow (it's not yet implemented)
+- Kept `postprocess` command available for when Phase 3 is implemented
+- Added informative warning messages when Phase 3 is called
+- Updated `run_full()` function to skip Phase 3 and inform user it's coming
+
+### 📝 Documentation Updates
+
+#### README.md
+- Updated directory structure to show all 5 layers
+- Changed all chr6 references to chr22
+- Added comprehensive "What Was Fixed" section with version 1.2 and 1.1 changes
+- Updated resource requirements for chr22
+- Added "Available Layers" table showing status of each layer
+- Updated version information to 1.2
+
+#### QUICKSTART.md
+- Added "What's New in v1.2" section
+- Changed all chr6 references to chr22
+- Updated time estimates for chr22
+- Enhanced "Key Changes" section with both v1.2 and v1.1 fixes
+- Updated "After Test Success" steps to include layer setup instructions
+
+#### Path Corrections
+- Updated UKB chr rename map path to correct location
+- Verified all paths use consistent templating
+
+### 🧹 Code Quality Improvements
+
+- Improved error messages throughout
+- Better documentation of TODOs and future work
+- Consistent formatting in configuration files
+- Clearer comments in shell scripts
+
+---
+
+## Version 1.1 - Fixed
 
 ### 🔧 Bug Fixes
 

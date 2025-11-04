@@ -1,0 +1,81 @@
+# Layer 1: Migration Period
+# Time depth: ~900-2800 BP
+
+layer_id: 1
+layer_name: "Migration Period"
+time_depth_bp: [900, 2800]
+
+# Reference populations for this layer
+# Each population needs:
+#   - name: Population identifier (will be used in output files)
+#   - sample_file: Path to text file with sample IDs (one per line)
+#   - time_range_bp: [min, max] age range in years BP
+#   - description: Optional description
+
+reference_populations:
+  - name: "IA.Denmark.1575-900BP"
+    sample_file: "config/samples/layer1/IA.Denmark.1575-900BP.txt"
+    time_range_bp: [900, 1575]
+    description: "Danish Viking source"
+    
+  - name: "IA.Norway.1850-1250BP"
+    sample_file: "config/samples/layer1/IA.Norway.1850-1250BP.txt"
+    time_range_bp: [1250, 1850]
+    description: "Norwegian Viking source"
+    
+  - name: "IA.Sweden.1575-900BP"
+    sample_file: "config/samples/layer1/IA.Sweden.1575-900BP.txt"
+    time_range_bp: [900, 1575]
+    description: "Swedish Viking source"
+    
+  - name: "IA.England.1650-1200BP"
+    sample_file: "config/samples/layer1/IA.England.1650-1200BP.txt"
+    time_range_bp: [1200, 1650]
+    description: "Saxon source"
+    
+  - name: "IA.France.2400-900BP"
+    sample_file: "config/samples/layer1/IA.France.2400-900BP.txt"
+    time_range_bp: [900, 2400]
+    description: "Mainland Celtic source"
+    
+  - name: "IA.ScotlandIreland.2800-900BP"
+    sample_file: "config/samples/layer1/IA.ScotlandIreland.2800-900BP.txt"
+    time_range_bp: [900, 2800]
+    description: "Local Celtic source"
+
+# Target samples
+# Options:
+#   - "all_non_ref": All samples not in reference panel (modern + ancient)
+#   - "modern_only": Only modern samples (UKB, 1000G)
+#   - "ancient_only": Only ancient samples not in reference
+#   - "custom": Use samples listed in target_sample_file
+target_samples: "all_non_ref"
+target_sample_file: null  # Only used if target_samples: "custom"
+
+# Layer-specific quality filters
+# These are applied AFTER global filters
+filters:
+  # For reference samples (stricter)
+  ref_max_missing: 0.05
+  ref_min_coverage: 1.0  # Higher coverage requirement for refs
+  
+  # For target samples (more lenient)
+  target_max_missing: 0.20
+  target_min_coverage: 0.5  # Can be lower for targets
+  
+  # MAF threshold for this layer (can be different from global)
+  maf_threshold: 0.01
+  
+  # Additional quality flags to exclude (on top of global exclusions)
+  additional_exclude_flags: []
+
+# Painting parameters specific to this layer
+painting_params:
+  # If null, uses values from master config
+  batch_size: null
+  lambda_estimation_samples: null
+  
+  # SparsePainter-specific parameters
+  # See SparsePainter documentation for details
+  ne: null  # Effective population size (null = auto-estimate)
+  theta: null  # Mutation rate (null = auto-estimate)

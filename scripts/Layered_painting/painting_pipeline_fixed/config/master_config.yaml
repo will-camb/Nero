@@ -1,0 +1,105 @@
+# Master Configuration for Chromosome Painting Pipeline
+# Updated for /datasets/ukb-AUDIT/layered_painting
+
+project_name: "ukb_ancient_painting_test"
+
+# Directory paths
+paths:
+  # Base output directory
+  output_base: "/datasets/ukb-AUDIT/layered_painting"
+  temp_dir: "${output_base}/temp"
+  
+  # Data inputs
+  ancient_vcf: "/projects/lundbeck/scratch/vrb229/project_sea/data/250601_impute_sea/merge/vcf/{chrom}.250601_impute_sea.glimpse.vcf.gz"
+  
+  # UKB haplotype data (needs preprocessing)
+  ukb_haplotype: "/datasets/ukb-AUDIT/haplotype_vcf/haplotype_chr{chrom}.vcf.gz"
+  ukb_chr_rename_map: "/datasets/ukb-AUDIT/merged_UKBB_ref/pbwt/merged_vcfs/chr_rename_maps/{chrom}.map"
+  ukb_samples_file: "/datasets/ukb-AUDIT/merged_UKBB_ref/pbwt/merged_vcfs/UKBB_samples"
+  
+  # Genetic maps
+  genetic_maps: "/projects/lundbeck/data/genetic_map_hg37-hg38/genetic_map_GRCh37_chr{i}.txt"
+  
+  # Software paths
+  sparsepainter: "/maps/projects/lundbeck/people/jdn321/software/SparsePainter/SparsePainter"
+  pbwt: "/projects/lundbeck/people/jdn321/software/pbwt/pbwt"
+  bcftools: "bcftools"  # Assuming in PATH
+  bgzip: "bgzip"
+  tabix: "tabix"
+  
+  # Reference population file (sample_id \t population)
+  layer1_ref_popfile: "config/samples/layer1/ref_popfile.txt"
+
+# Global quality filters
+global_filters:
+  info_threshold: 0.5
+  maf_global: 0.01
+  max_missing_global: 0.1
+
+# LD pruning (disabled for now)
+ld_pruning:
+  enabled: false
+
+# UKB samples - for testing, specify a subset file
+ukb_samples: "subset"  # Will use config/samples/ukb_subset.txt
+
+# SparsePainter parameters
+sparsepainter:
+  lambda_estimation:
+    n_samples: 100
+    
+  painting:
+    prob_output: true
+    chunklength_output: true
+    chunkcount_output: false
+    probstore_format: "raw"
+    
+  parallelization:
+    target_batch_size: 1000
+    ref_vs_ref_parallel: false
+
+# Temporal filtering (not needed for this test)
+temporal_filtering:
+  exclude_younger_refs: false
+  temporal_buffer_years: 0
+
+# HPC/Cluster settings
+hpc:
+  # Execution mode: "interactive" or "slurm"
+  execution_mode: "interactive"  # Set to "slurm" when ready for job submission
+  scheduler: "slurm"
+  partition: "hologenomics"
+  time_limit: "48:00:00"
+  mem_per_job: "32G"
+  cpus_per_task: 1
+  array_max_jobs: 400
+  
+  modules:
+    - "perl/5.38.0"
+    - "gsl/2.5"
+    - "bcftools/1.20"
+    - "plink/2.0.0"
+    - "python/3.9.5"
+
+# Post-processing
+postprocessing:
+  min_probability_threshold: 0.85
+  
+  database:
+    type: "sqlite"
+    path: "${output_base}/database/painting_results.db"
+    
+  vcf_annotation:
+    create_per_layer: true
+    create_multi_layer: false
+
+# Chromosomes to process (start with chr6 for testing)
+chromosomes: [6]  # Change to [1,2,3,...,22] for full run
+
+# Logging
+logging:
+  level: "INFO"
+  log_dir: "${output_base}/logs"
+
+# Number of layers (just 1 for testing)
+n_layers: 1

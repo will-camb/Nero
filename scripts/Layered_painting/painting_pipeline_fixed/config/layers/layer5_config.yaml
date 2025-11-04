@@ -1,0 +1,52 @@
+# Layer 5: Archaic vs Modern Human Ancestry
+# Time depth: >50,000 BP
+
+layer_id: 5
+layer_name: "Archaic_Ancestry"
+time_depth_bp: [50000, 100000]
+
+# Reference populations for this layer
+reference_populations:
+  - name: "Archaic"
+    sample_file: "config/samples/layer5/Archaic.txt"
+    time_range_bp: [50000, 100000]
+    description: "High-coverage archaic genomes (Neanderthal: Vindija, Altai, Chagyrskaya; Denisovan: Altai)"
+    
+  - name: "ModernAfrican"
+    sample_file: "config/samples/layer5/ModernAfrican.txt"
+    time_range_bp: [0, 0]  # Modern samples
+    description: "Modern African references from 1000 Genomes (Yoruba, Luhya, etc.)"
+
+# Target samples
+target_samples: "all_non_ref"
+target_sample_file: null
+
+# Layer-specific quality filters
+filters:
+  # For archaic genomes (very high quality)
+  ref_max_missing: 0.02
+  ref_min_coverage: 10.0  # High coverage archaics only
+  
+  # For modern African refs (from 1000G, high quality)
+  # These will be filtered separately
+  
+  # For targets
+  target_max_missing: 0.20
+  target_min_coverage: 0.5
+  
+  maf_threshold: 0.01
+  additional_exclude_flags: []
+
+# Special considerations for archaic layer
+archaic_specific:
+  # Use only transversion SNPs to reduce deamination artifacts
+  use_transversions_only: false  # Set to true if concerned about damage
+  
+  # Mask CpG sites (prone to deamination)
+  mask_cpg: false  # Set to true if concerned about damage
+
+painting_params:
+  batch_size: null
+  lambda_estimation_samples: null
+  ne: null
+  theta: null

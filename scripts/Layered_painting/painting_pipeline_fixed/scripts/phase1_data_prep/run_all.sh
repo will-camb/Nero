@@ -81,7 +81,7 @@ for CHR in $(echo $CHROMOSOMES | tr ',' ' '); do
             $OUTPUT_BASE/data/processed/ukb/chr${CHR}.GT.chrinfo.vcf.gz \
             -o $UKB_PROCESSED
 
-        tabix -p vcf $UKB_PROCESSED
+        bcftools tabix -p vcf $UKB_PROCESSED
 
         # Clean up intermediate files
         rm $OUTPUT_BASE/data/processed/ukb/chr${CHR}.GT.vcf.gz
@@ -105,7 +105,7 @@ for CHR in $(echo $CHROMOSOMES | tr ',' ' '); do
             -i "INFO/INFO>$INFO_THRESH && MAF>$MAF_THRESH && F_MISSING<$MAX_MISSING" \
             -Oz -o $ANCIENT_FILTERED
         
-        tabix -p vcf $ANCIENT_FILTERED
+        bcftools tabix -p vcf $ANCIENT_FILTERED
         
         N_VARIANTS=$(bcftools view -H $ANCIENT_FILTERED | wc -l)
         echo "  ✓ Created $ANCIENT_FILTERED ($N_VARIANTS variants)"

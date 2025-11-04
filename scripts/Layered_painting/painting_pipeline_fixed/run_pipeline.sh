@@ -169,7 +169,7 @@ run_postprocess() {
     bash scripts/phase3_postprocess/combine_all_layers.sh
 
     if [ $? -eq 0 ]; then
-        print_info "âœ" Phase 3 completed successfully"
+        print_info "Phase 3 completed successfully"
         return 0
     else
         print_error "âœ— Phase 3 failed"
@@ -203,7 +203,7 @@ run_full() {
     fi
 
     print_info "========================================="
-    print_info "âœ" Full pipeline completed successfully!"
+    print_info "Full pipeline completed successfully!"
     print_info "========================================="
     print_info ""
     print_info "Note: Phase 3 (post-processing) is not yet implemented."

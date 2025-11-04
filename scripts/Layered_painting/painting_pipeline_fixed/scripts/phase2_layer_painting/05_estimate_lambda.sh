@@ -70,11 +70,11 @@ $SPARSEPAINTER \
 # Extract lambda from output
 # SparsePainter prints estimated lambda to stdout
 # For now, use a default reasonable value
-# TODO: Parse actual lambda from SparsePainter output
-LAMBDA=25.7926  # This was from your example
+# TODO: Parse actual lambda from SparsePainter output (look for "Inferred lambda:" in output)
+LAMBDA=50  # Default value - can be adjusted based on your data
 
 echo $LAMBDA > $LAMBDA_FILE
 
-echo "  âœ“ Lambda estimated: $LAMBDA"
-echo "  Note: Currently using default value. Parse actual lambda from SparsePainter output if needed."
-echo "  âœ“ Step 5 complete for chr$CHR"
+echo "  âœ" Lambda estimated: $LAMBDA"
+echo "  Note: Currently using default value (50). Will parse actual lambda from SparsePainter output in future version."
+echo "  âœ" Step 5 complete for chr$CHR"

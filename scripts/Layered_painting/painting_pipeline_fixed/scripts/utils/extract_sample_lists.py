@@ -40,14 +40,23 @@ def process_ref_popfile(input_file, output_dir):
     
     # Write individual population files
     for pop, samples in pop_samples.items():
-        # Create safe filename
-        safe_pop = pop.split('.')[0:2]  # Take first two parts (e.g., IA.Denmark)
-        safe_pop = '.'.join(safe_pop)
-        
+        # Use the full population name (everything before the last dot-separated component if it looks like a classifier)
+        # e.g., "IA.Denmark.1575-900BP.XpcCWC.0_1_3" -> "IA.Denmark.1575-900BP"
+        # Take everything up to the part that has underscores (classifier codes)
+        parts = pop.split('.')
+        # Find where the classifier codes start (parts with underscores or just numbers)
+        pop_name_parts = []
+        for part in parts:
+            if '_' in part or part.isdigit():
+                break
+            pop_name_parts.append(part)
+
+        safe_pop = '.'.join(pop_name_parts) if pop_name_parts else pop
+
         output_file = output_dir / f"{safe_pop}.txt"
         with open(output_file, 'w') as f:
             f.write('\n'.join(samples))
-        
+
         print(f"  {output_file}: {len(samples)} samples")
     
     # Write combined reference samples file (all samples, one per line)

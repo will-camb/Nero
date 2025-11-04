@@ -32,17 +32,17 @@ for CHR in $(echo $CHROMOSOMES | tr ',' ' '); do
     # Merge probability files
     echo "  Merging probability files..."
     PROB_OUTPUT="$RESULTS_DIR/raw_probabilities/chr${CHR}_prob.txt.gz"
-    
+
     if [ -f "$PROB_OUTPUT" ]; then
-        echo "    âœ“ Already exists: $PROB_OUTPUT"
+        echo "    âœ" Already exists: $PROB_OUTPUT"
     else
         mkdir -p $RESULTS_DIR/raw_probabilities
-        
-        # Use Python script to merge (from your merge_files.py)
-        python3 << 'EOF'
+
+        # Create temporary Python script to merge files
+        TEMP_SCRIPT=$(mktemp)
+        cat > $TEMP_SCRIPT << 'EOF'
 import gzip
 import sys
-import os
 from pathlib import Path
 
 chr_num = sys.argv[1]
@@ -55,38 +55,41 @@ print(f"    Merging {n_batches} probability files...")
 with gzip.open(output_file, 'wt') as output:
     for batch_idx in range(1, n_batches + 1):
         batch_file = batch_dir / f"chr{chr_num}_batch{batch_idx}_prob.txt.gz"
-        
+
         if not batch_file.exists():
             print(f"      Warning: Missing {batch_file}")
             continue
-        
+
         with gzip.open(batch_file, 'rt') as input_file:
             # Skip header lines for all but first batch
             if batch_idx != 1:
                 next(input_file, None)  # Skip first header line
                 next(input_file, None)  # Skip second header line
-            
+
             for line in input_file:
                 output.write(line)
-        
+
         print(f"      Merged batch {batch_idx}/{n_batches}")
 
-print(f"    âœ“ Created {output_file}")
+print(f"    âœ" Created {output_file}")
 EOF
-        
-        python3 -c "$(cat)" $CHR $BATCH_DIR $PROB_OUTPUT $N_BATCHES
+
+        python3 $TEMP_SCRIPT $CHR $BATCH_DIR $PROB_OUTPUT $N_BATCHES
+        rm $TEMP_SCRIPT
     fi
     
     # Merge chunklength files
     echo "  Merging chunklength files..."
     CHUNK_OUTPUT="$RESULTS_DIR/chunklengths/chr${CHR}_chunklength.txt.gz"
-    
+
     if [ -f "$CHUNK_OUTPUT" ]; then
-        echo "    âœ“ Already exists: $CHUNK_OUTPUT"
+        echo "    âœ" Already exists: $CHUNK_OUTPUT"
     else
         mkdir -p $RESULTS_DIR/chunklengths
-        
-        python3 << 'EOF'
+
+        # Create temporary Python script to merge files
+        TEMP_SCRIPT=$(mktemp)
+        cat > $TEMP_SCRIPT << 'EOF'
 import gzip
 import sys
 from pathlib import Path
@@ -101,25 +104,26 @@ print(f"    Merging {n_batches} chunklength files...")
 with gzip.open(output_file, 'wt') as output:
     for batch_idx in range(1, n_batches + 1):
         batch_file = batch_dir / f"chr{chr_num}_batch{batch_idx}_chunklength.txt.gz"
-        
+
         if not batch_file.exists():
             print(f"      Warning: Missing {batch_file}")
             continue
-        
+
         with gzip.open(batch_file, 'rt') as input_file:
             # Skip header line for all but first batch
             if batch_idx != 1:
                 next(input_file, None)
-            
+
             for line in input_file:
                 output.write(line)
-        
+
         print(f"      Merged batch {batch_idx}/{n_batches}")
 
-print(f"    âœ“ Created {output_file}")
+print(f"    âœ" Created {output_file}")
 EOF
-        
-        python3 -c "$(cat)" $CHR $BATCH_DIR $CHUNK_OUTPUT $N_BATCHES
+
+        python3 $TEMP_SCRIPT $CHR $BATCH_DIR $CHUNK_OUTPUT $N_BATCHES
+        rm $TEMP_SCRIPT
     fi
     
     echo "  âœ“ Chromosome $CHR complete"

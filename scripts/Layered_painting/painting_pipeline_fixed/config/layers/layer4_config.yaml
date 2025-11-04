@@ -1,0 +1,56 @@
+# Layer 4: Mesolithic
+# Time depth: ~8000-12000 BP
+
+layer_id: 4
+layer_name: "Mesolithic"
+time_depth_bp: [8000, 12000]
+
+# Reference populations for this layer
+# PLACEHOLDER: Update these with your actual Mesolithic populations from the ancient VCF
+reference_populations:
+  - name: "Mesolithic.WHG.12000-8000BP"
+    sample_file: "config/samples/layer4/Mesolithic.WHG.12000-8000BP.txt"
+    time_range_bp: [8000, 12000]
+    description: "Western Hunter-Gatherers"
+
+  - name: "Mesolithic.EHG.12000-8000BP"
+    sample_file: "config/samples/layer4/Mesolithic.EHG.12000-8000BP.txt"
+    time_range_bp: [8000, 12000]
+    description: "Eastern Hunter-Gatherers"
+
+  - name: "Mesolithic.SHG.12000-8000BP"
+    sample_file: "config/samples/layer4/Mesolithic.SHG.12000-8000BP.txt"
+    time_range_bp: [8000, 12000]
+    description: "Scandinavian Hunter-Gatherers"
+
+  - name: "Mesolithic.Caucasus.12000-8000BP"
+    sample_file: "config/samples/layer4/Mesolithic.Caucasus.12000-8000BP.txt"
+    time_range_bp: [8000, 12000]
+    description: "Caucasus Hunter-Gatherers"
+
+# Target samples
+target_samples: "all_non_ref"
+target_sample_file: null
+
+# Layer-specific quality filters
+filters:
+  # For reference samples (stricter for ancient samples)
+  ref_max_missing: 0.10  # Slightly more lenient for very ancient samples
+  ref_min_coverage: 0.8
+
+  # For target samples (more lenient)
+  target_max_missing: 0.20
+  target_min_coverage: 0.5
+
+  # MAF threshold for this layer
+  maf_threshold: 0.01
+
+  # Additional quality flags to exclude
+  additional_exclude_flags: []
+
+# Painting parameters specific to this layer
+painting_params:
+  batch_size: null
+  lambda_estimation_samples: null
+  ne: null
+  theta: null

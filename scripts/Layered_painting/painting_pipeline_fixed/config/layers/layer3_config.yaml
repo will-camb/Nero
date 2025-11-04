@@ -1,0 +1,56 @@
+# Layer 3: Neolithic
+# Time depth: ~4500-8000 BP
+
+layer_id: 3
+layer_name: "Neolithic"
+time_depth_bp: [4500, 8000]
+
+# Reference populations for this layer
+# PLACEHOLDER: Update these with your actual Neolithic populations from the ancient VCF
+reference_populations:
+  - name: "Neolithic.Britain.8000-4500BP"
+    sample_file: "config/samples/layer3/Neolithic.Britain.8000-4500BP.txt"
+    time_range_bp: [4500, 8000]
+    description: "British Neolithic farmers"
+
+  - name: "Neolithic.Anatolia.8000-4500BP"
+    sample_file: "config/samples/layer3/Neolithic.Anatolia.8000-4500BP.txt"
+    time_range_bp: [4500, 8000]
+    description: "Anatolian Neolithic farmers"
+
+  - name: "Neolithic.CentralEurope.8000-4500BP"
+    sample_file: "config/samples/layer3/Neolithic.CentralEurope.8000-4500BP.txt"
+    time_range_bp: [4500, 8000]
+    description: "Central European Neolithic (LBK)"
+
+  - name: "Neolithic.Iberia.8000-4500BP"
+    sample_file: "config/samples/layer3/Neolithic.Iberia.8000-4500BP.txt"
+    time_range_bp: [4500, 8000]
+    description: "Iberian Neolithic farmers"
+
+# Target samples
+target_samples: "all_non_ref"
+target_sample_file: null
+
+# Layer-specific quality filters
+filters:
+  # For reference samples (stricter)
+  ref_max_missing: 0.05
+  ref_min_coverage: 1.0
+
+  # For target samples (more lenient)
+  target_max_missing: 0.20
+  target_min_coverage: 0.5
+
+  # MAF threshold for this layer
+  maf_threshold: 0.01
+
+  # Additional quality flags to exclude
+  additional_exclude_flags: []
+
+# Painting parameters specific to this layer
+painting_params:
+  batch_size: null
+  lambda_estimation_samples: null
+  ne: null
+  theta: null

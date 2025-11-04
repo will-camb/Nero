@@ -146,25 +146,32 @@ run_postprocess() {
     print_info "========================================="
     print_info "Phase 3: Post-Processing"
     print_info "========================================="
-    
+
+    if [ ! -f "scripts/phase3_postprocess/combine_all_layers.sh" ]; then
+        print_warning "Phase 3 is not yet implemented."
+        print_warning "Script not found: scripts/phase3_postprocess/combine_all_layers.sh"
+        print_info ""
+        print_info "This feature is planned for a future release."
+        print_info "It will include:"
+        print_info "  - Combining results from all layers"
+        print_info "  - Creating SQLite database"
+        print_info "  - VCF annotation with ancestry information"
+        return 1
+    fi
+
     # Check if any layers have been completed
     if [ ! -d "data/results" ] || [ -z "$(ls -A data/results/)" ]; then
         print_warning "No layer results found in data/results/"
         print_warning "Have you run any painting layers yet?"
         return 1
     fi
-    
-    if [ ! -f "scripts/phase3_postprocess/combine_all_layers.sh" ]; then
-        print_error "Phase 3 script not found: scripts/phase3_postprocess/combine_all_layers.sh"
-        return 1
-    fi
-    
+
     bash scripts/phase3_postprocess/combine_all_layers.sh
-    
+
     if [ $? -eq 0 ]; then
-        print_info "âœ“ Phase 3 completed successfully"
+        print_info "âœ" Phase 3 completed successfully"
         return 0
-    else:
+    else
         print_error "âœ— Phase 3 failed"
         return 1
     fi
@@ -175,36 +182,32 @@ run_full() {
     print_info "========================================="
     print_info "Running Full Pipeline"
     print_info "========================================="
-    
+
     # Step 1: Validate config
     if ! check_config; then
         return 1
     fi
-    
+
     # Step 2: Data preparation
-    print_info "\nStep 1/3: Data Preparation"
+    print_info "\nStep 1/2: Data Preparation"
     if ! run_prep; then
         print_error "Pipeline stopped due to Phase 1 failure"
         return 1
     fi
-    
+
     # Step 3: Paint all layers
-    print_info "\nStep 2/3: Painting All Layers"
+    print_info "\nStep 2/2: Painting All Layers"
     if ! run_all_layers; then
         print_error "Pipeline stopped due to Phase 2 failure"
         return 1
     fi
-    
-    # Step 4: Post-processing
-    print_info "\nStep 3/3: Post-Processing"
-    if ! run_postprocess; then
-        print_error "Pipeline stopped due to Phase 3 failure"
-        return 1
-    fi
-    
+
     print_info "========================================="
-    print_info "âœ“ Full pipeline completed successfully!"
+    print_info "âœ" Full pipeline completed successfully!"
     print_info "========================================="
+    print_info ""
+    print_info "Note: Phase 3 (post-processing) is not yet implemented."
+    print_info "You can run it manually when available with: ./run_pipeline.sh postprocess"
     return 0
 }
 

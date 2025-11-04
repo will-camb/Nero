@@ -1,0 +1,56 @@
+# Layer 2: Bronze Age
+# Time depth: ~2800-4500 BP
+
+layer_id: 2
+layer_name: "Bronze_Age"
+time_depth_bp: [2800, 4500]
+
+# Reference populations for this layer
+# PLACEHOLDER: Update these with your actual Bronze Age populations from the ancient VCF
+reference_populations:
+  - name: "BA.Britain.4500-2800BP"
+    sample_file: "config/samples/layer2/BA.Britain.4500-2800BP.txt"
+    time_range_bp: [2800, 4500]
+    description: "British Bronze Age"
+
+  - name: "BA.CentralEurope.4500-2800BP"
+    sample_file: "config/samples/layer2/BA.CentralEurope.4500-2800BP.txt"
+    time_range_bp: [2800, 4500]
+    description: "Central European Bronze Age"
+
+  - name: "BA.Iberia.4500-2800BP"
+    sample_file: "config/samples/layer2/BA.Iberia.4500-2800BP.txt"
+    time_range_bp: [2800, 4500]
+    description: "Iberian Bronze Age"
+
+  - name: "BA.Steppe.4500-2800BP"
+    sample_file: "config/samples/layer2/BA.Steppe.4500-2800BP.txt"
+    time_range_bp: [2800, 4500]
+    description: "Steppe Bronze Age"
+
+# Target samples
+target_samples: "all_non_ref"
+target_sample_file: null
+
+# Layer-specific quality filters
+filters:
+  # For reference samples (stricter)
+  ref_max_missing: 0.05
+  ref_min_coverage: 1.0
+
+  # For target samples (more lenient)
+  target_max_missing: 0.20
+  target_min_coverage: 0.5
+
+  # MAF threshold for this layer
+  maf_threshold: 0.01
+
+  # Additional quality flags to exclude
+  additional_exclude_flags: []
+
+# Painting parameters specific to this layer
+painting_params:
+  batch_size: null
+  lambda_estimation_samples: null
+  ne: null
+  theta: null

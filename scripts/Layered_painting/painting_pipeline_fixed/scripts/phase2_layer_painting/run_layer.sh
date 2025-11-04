@@ -6,12 +6,6 @@
 
 set -e
 
-# Load required modules
-module load python/3.9.5
-module load bcftools/1.20
-module load perl/5.38.0
-module load gsl/2.5
-
 LAYER=$1
 
 if [ -z "$LAYER" ]; then

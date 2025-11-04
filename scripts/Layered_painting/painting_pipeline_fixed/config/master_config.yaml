@@ -18,7 +18,7 @@ paths:
   ukb_samples_file: "/datasets/ukb-AUDIT/merged_UKBB_ref/pbwt/merged_vcfs/UKBB_samples"
   
   # Genetic maps
-  genetic_maps: "/projects/lundbeck/data/genetic_map_hg37-hg38/genetic_map_GRCh37_chr{i}.txt"
+  genetic_maps: "/projects/lundbeck/data/genetic_map_hg37-hg38/genetic_map_GRCh37_chr{chrom}.txt"
   
   # Software paths
   sparsepainter: "/maps/projects/lundbeck/people/jdn321/software/SparsePainter/SparsePainter"
@@ -93,13 +93,13 @@ postprocessing:
     create_per_layer: true
     create_multi_layer: false
 
-# Chromosomes to process (start with chr6 for testing)
-chromosomes: [6]  # Change to [1,2,3,...,22] for full run
+# Chromosomes to process (start with chr22 for testing)
+chromosomes: [22]  # Change to [1,2,3,...,22] for full run
 
 # Logging
 logging:
   level: "INFO"
   log_dir: "${output_base}/logs"
 
-# Number of layers (just 1 for testing)
-n_layers: 1
+# Number of layers (configs exist for 1, 2, 3, 4, 5)
+n_layers: 5

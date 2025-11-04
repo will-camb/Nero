@@ -10,7 +10,7 @@ paths:
   temp_dir: "${output_base}/temp"
   
   # Data inputs
-  ancient_vcf: "/projects/lundbeck/scratch/vrb229/project_sea/data/250601_impute_sea/merge/vcf/{chrom}.250601_impute_sea.glimpse.vcf.gz"
+  ancient_vcf: "/projects/lundbeck/scratch/vrb229/Project_IronAge/data/240627_impute_iadk/merge/vcf/{chrom}.240627_impute_iadk.glimpse.vcf.gz"
   
   # UKB haplotype data (needs preprocessing)
   ukb_haplotype: "/datasets/ukb-AUDIT/haplotype_vcf/haplotype_chr{chrom}.vcf.gz"

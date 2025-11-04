@@ -47,8 +47,8 @@ def process_ref_popfile(input_file, output_dir):
         # Find where the classifier codes start (parts with underscores or just numbers)
         pop_name_parts = []
         for part in parts:
-            if '_' in part or part.isdigit():
-                break
+            # if '_' in part or part.isdigit():
+            #    break
             pop_name_parts.append(part)
 
         safe_pop = '.'.join(pop_name_parts) if pop_name_parts else pop

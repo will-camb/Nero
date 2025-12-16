@@ -2,38 +2,92 @@
 # Example usage of the Pathogen HLA Class I & II Binding Analysis Pipeline
 
 # Install dependencies
-echo "Installing Python dependencies..."
-pip install -r requirements.txt --break-system-packages
+# echo "Installing Python dependencies..."
+# pip install -r requirements.txt --break-system-packages
 
 # Make the main script executable
-chmod +x pathogen_hla_binding.py
+chmod +x pathogen_hla_binding_class_i_ii.py
 
 # Example 1: Analyze smallpox (Variola virus) - both Class I and II
-echo "Running analysis for Variola virus (smallpox) - Class I & II..."
-python pathogen_hla_binding.py \
-    --email "your.email@example.com" \
+echo "Running analysis for Variola virus (smallpox)..."
+python pathogen_hla_binding_class_i_ii.py \
+    --email "wb275@cam.ac.uk" \
     --organism "Variola virus[Organism] AND RefSeq[Filter]" \
     --output-dir "./smallpox_analysis" \
     --name "smallpox" \
-    --n-jobs 20
+    --n-jobs 80
 
-# Example 2: Analyze another pathogen (e.g., Monkeypox)
-echo "Example command for Monkeypox virus..."
-echo "python pathogen_hla_binding.py \\"
-echo "    --email \"your.email@example.com\" \\"
-echo "    --organism \"Monkeypox virus[Organism] AND RefSeq[Filter]\" \\"
-echo "    --output-dir \"./monkeypox_analysis\" \\"
-echo "    --name \"monkeypox\" \\"
-echo "    --n-jobs 20"
+echo "Running analysis for Yersinia pestis CO92 (plague)..."
+python3 pathogen_hla_binding_class_i_ii.py \
+   --email "wb275@cam.ac.uk" \
+   --organism "Yersinia pestis CO92[Organism] AND RefSeq[Filter]" \
+   --output-dir "plague_analysis" \
+   --name "plague" \
+   --n-jobs 80
 
-# Example 3: Analyze specific bacterial strain
-echo "Example command for Y. pestis specific strain..."
-echo "python pathogen_hla_binding.py \\"
-echo "    --email \"your.email@example.com\" \\"
-echo "    --organism \"Yersinia pestis CO92[Organism] AND RefSeq[Filter]\" \\"
-echo "    --output-dir \"./ypestis_analysis\" \\"
-echo "    --name \"ypestis_co92\" \\"
-echo "    --n-jobs 20"
+echo "Running analysis for HIV..."
+python3 pathogen_hla_binding_class_i_ii.py \
+   --email "wb275@cam.ac.uk" \
+   --organism "HIV[Organism] AND RefSeq[Filter]" \
+   --output-dir "HIV_analysis" \
+   --name "HIV" \
+   --n-jobs 80
+
+echo "Running analysis for measles..."
+python3 pathogen_hla_binding_class_i_ii.py \
+   --email "wb275@cam.ac.uk" \
+   --organism "measles[Organism] AND RefSeq[Filter]" \
+   --output-dir "measles_analysis" \
+   --name "measles" \
+   --n-jobs 80
+
+echo "Running analysis for leprosy (Mycobacterium leprae)..."
+python3 pathogen_hla_binding_class_i_ii.py \
+   --email "wb275@cam.ac.uk" \
+   --organism "Mycobacterium leprae[Organism] AND RefSeq[Filter]" \
+   --output-dir "leprosy_analysis" \
+   --name "leprosy" \
+   --n-jobs 80
+
+echo "Running analysis for Borrelia recurrentis..."
+python3 pathogen_hla_binding_class_i_ii.py \
+   --email "wb275@cam.ac.uk" \
+   --organism "Borrelia recurrentis[Organism] AND RefSeq[Filter]" \
+   --output-dir "B_recurrentis_analysis" \
+   --name "B_recurrentis" \
+   --n-jobs 80
+
+echo "Running analysis for Leptospira interrogans..."
+python3 pathogen_hla_binding_class_i_ii.py \
+   --email "wb275@cam.ac.uk" \
+   --organism "Leptospira interrogans Copenhageni[Organism] AND RefSeq[Filter]" \
+   --output-dir "L_interrogans_analysis" \
+   --name "L_interrogans" \
+   --n-jobs 40
+
+echo "Running analysis for Treponema pallidum..."
+python3 pathogen_hla_binding_class_i_ii.py \
+   --email "wb275@cam.ac.uk" \
+   --organism "Treponema pallidum[Organism] AND RefSeq[Filter]" \
+   --output-dir "T_pallidum_analysis" \
+   --name "T_pallidum" \
+   --n-jobs 40
+
+echo "Running analysis for Mycobacterium tuberculosis..."
+python3 pathogen_hla_binding_class_i_ii.py \
+   --email "wb275@cam.ac.uk" \
+   --organism "Mycobacterium tuberculosis H37Rv[Organism] AND RefSeq[Filter]" \
+   --output-dir "M_tuberculosis_analysis" \
+   --name "M_tuberculosis" \
+   --n-jobs 40
+
+echo "Running analysis for Plasmodium vivax..."
+python3 pathogen_hla_binding_class_i_ii.py \
+   --email "wb275@cam.ac.uk" \
+   --organism "Plasmodium vivax[Organism] AND RefSeq[Filter]" \
+   --output-dir "P_vivax_analysis" \
+   --name "P_vivax" \
+   --n-jobs 40
 
 echo "Analysis pipeline setup complete!"
 echo ""
@@ -52,7 +106,7 @@ echo "- organism_secreted.fasta: Filtered secreted proteins"
 echo "- signalp/: SignalP analysis results"
 echo "- netmhciipan_class_ii/: netMHCIIpan prediction files"
 echo "- netmhcpan_class_i/: netMHCpan prediction files"
-echo "- organism_hla_binding_results.xlsx: Final combined results table"
+echo "- organism_hla_binding_results.csv: Final combined results table"
 echo ""
 echo "Results file columns:"
 echo "- protein_id: Source protein identifier"

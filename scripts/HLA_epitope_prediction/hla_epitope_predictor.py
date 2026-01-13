@@ -1,0 +1,870 @@
+#!/usr/bin/env python3
+"""
+HLA Epitope Prediction Pipeline
+
+Predicts HLA Class I and II binding for pathogen proteomes with support
+for incremental processing and result caching.
+
+Author: Refactored for better maintainability and incremental processing
+"""
+
+import os
+import sys
+import subprocess
+import json
+import shutil
+from pathlib import Path
+from typing import List, Dict, Set, Tuple, Optional
+from dataclasses import dataclass
+import argparse
+import logging
+
+import pandas as pd
+from Bio import Entrez, SeqIO
+from Bio.SeqRecord import SeqRecord
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class AnalysisConfig:
+    """Configuration for HLA epitope analysis."""
+    email: str
+    organism_query: str
+    output_dir: Path
+    organism_name: str
+    netmhcpan_path: Path
+    netmhciipan_path: Path
+    signalp_model_dir: Path
+    n_parallel_jobs: int = 20
+    class_i_peptide_lengths: List[int] = None
+    class_ii_peptide_length: int = 15
+    batch_size_proteins: int = 100
+    max_proteins: int = 15000
+
+    def __post_init__(self):
+        if self.class_i_peptide_lengths is None:
+            self.class_i_peptide_lengths = [8, 9, 10, 11]
+        self.output_dir = Path(self.output_dir)
+        self.netmhcpan_path = Path(self.netmhcpan_path)
+        self.netmhciipan_path = Path(self.netmhciipan_path)
+        self.signalp_model_dir = Path(self.signalp_model_dir)
+
+
+class ProteomeDownloader:
+    """Handles downloading proteomes from NCBI."""
+
+    def __init__(self, email: str, batch_size: int = 100):
+        self.email = email
+        self.batch_size = batch_size
+        Entrez.email = email
+
+    def download(self, organism_query: str, output_file: Path, max_proteins: int = 15000) -> Path:
+        """
+        Download proteome from NCBI.
+
+        Args:
+            organism_query: NCBI search query (e.g., "Variola virus[Organism]")
+            output_file: Path to save FASTA file
+            max_proteins: Maximum number of proteins to download
+
+        Returns:
+            Path to downloaded FASTA file
+        """
+        logger.info(f"Searching NCBI for: {organism_query}")
+
+        # Search for protein sequences
+        search_handle = Entrez.esearch(
+            db="protein",
+            term=organism_query,
+            retmax=max_proteins
+        )
+        search_results = Entrez.read(search_handle)
+        search_handle.close()
+
+        protein_ids = search_results["IdList"]
+        logger.info(f"Found {len(protein_ids)} proteins")
+
+        if not protein_ids:
+            raise ValueError(f"No proteins found for: {organism_query}")
+
+        # Download in batches
+        all_records = []
+        n_batches = (len(protein_ids) - 1) // self.batch_size + 1
+
+        for i in range(0, len(protein_ids), self.batch_size):
+            batch_ids = protein_ids[i:i + self.batch_size]
+            batch_num = i // self.batch_size + 1
+            logger.info(f"Downloading batch {batch_num}/{n_batches}")
+
+            fetch_handle = Entrez.efetch(
+                db="protein",
+                id=batch_ids,
+                rettype="fasta",
+                retmode="text"
+            )
+
+            batch_records = list(SeqIO.parse(fetch_handle, "fasta"))
+            all_records.extend(batch_records)
+            fetch_handle.close()
+
+        # Write to file
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(output_file, 'w') as f:
+            SeqIO.write(all_records, f, "fasta")
+
+        logger.info(f"Downloaded {len(all_records)} sequences to {output_file}")
+        return output_file
+
+
+class SignalPFilter:
+    """Filters proteins using SignalP to identify secreted proteins."""
+
+    def __init__(self, model_dir: Path):
+        self.model_dir = model_dir
+
+    def _create_short_id_fasta(self, input_fasta: Path, output_fasta: Path) -> Dict[str, str]:
+        """Create FASTA with shortened IDs to avoid SignalP filename issues."""
+        id_mapping = {}
+        short_records = []
+
+        with open(input_fasta) as f:
+            for i, record in enumerate(SeqIO.parse(f, "fasta")):
+                short_id = f"prot_{i+1:06d}"
+                id_mapping[short_id] = record.id
+
+                short_record = SeqRecord(
+                    record.seq,
+                    id=short_id,
+                    description=""
+                )
+                short_records.append(short_record)
+
+        with open(output_fasta, 'w') as f:
+            SeqIO.write(short_records, f, "fasta")
+
+        logger.info(f"Created short-ID FASTA with {len(short_records)} sequences")
+        return id_mapping
+
+    def run(self, input_fasta: Path, output_dir: Path, organism_type: str = "other") -> List[str]:
+        """
+        Run SignalP and return list of secreted protein IDs.
+
+        Args:
+            input_fasta: Input proteome FASTA
+            output_dir: Directory for SignalP output
+            organism_type: "eukarya", "gram+", "gram-", or "other"
+
+        Returns:
+            List of protein IDs with signal peptides
+        """
+        logger.info("Running SignalP analysis...")
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Create shortened FASTA
+        short_fasta = output_dir / "proteins_short_ids.fasta"
+        id_mapping = self._create_short_id_fasta(input_fasta, short_fasta)
+
+        # Run SignalP
+        cmd = [
+            "signalp6",
+            "--fastafile", str(short_fasta),
+            "--output_dir", str(output_dir),
+            "--format", "none",
+            "--mode", "fast",
+            "--organism", organism_type,
+            "--model_dir", str(self.model_dir)
+        ]
+
+        try:
+            subprocess.run(cmd, check=True, capture_output=True, text=True)
+            logger.info("SignalP completed successfully")
+        except subprocess.CalledProcessError as e:
+            logger.error(f"SignalP failed: {e.stderr}")
+            raise
+
+        # Parse results
+        secreted_ids = []
+        prediction_file = output_dir / "prediction_results.txt"
+
+        if prediction_file.exists():
+            with open(prediction_file) as f:
+                for line in f:
+                    if line.startswith('#') or not line.strip():
+                        continue
+                    parts = line.strip().split('\t')
+                    if len(parts) >= 2 and parts[1] == "SP":
+                        short_id = parts[0]
+                        original_id = id_mapping.get(short_id, short_id)
+                        secreted_ids.append(original_id)
+
+        logger.info(f"Found {len(secreted_ids)} secreted proteins")
+        return secreted_ids
+
+    def filter_fasta(self, input_fasta: Path, output_fasta: Path, protein_ids: List[str]) -> Path:
+        """Filter FASTA file to keep only specified protein IDs."""
+        logger.info(f"Filtering FASTA to {len(protein_ids)} proteins...")
+
+        protein_id_set = set(protein_ids)
+        filtered_records = []
+
+        with open(input_fasta) as f:
+            for record in SeqIO.parse(f, "fasta"):
+                # Handle different FASTA header formats
+                record_id = record.id.split('|')[1] if '|' in record.id else record.id
+
+                if record_id in protein_id_set:
+                    filtered_records.append(record)
+
+        output_fasta.parent.mkdir(parents=True, exist_ok=True)
+        with open(output_fasta, 'w') as f:
+            SeqIO.write(filtered_records, f, "fasta")
+
+        logger.info(f"Filtered to {len(filtered_records)} sequences")
+        return output_fasta
+
+
+class PeptideGenerator:
+    """Generates peptides from protein sequences."""
+
+    @staticmethod
+    def generate_peptides(fasta_file: Path, peptide_length: int) -> List[Dict]:
+        """
+        Generate overlapping peptides of fixed length.
+
+        Args:
+            fasta_file: Input FASTA file
+            peptide_length: Length of peptides to generate
+
+        Returns:
+            List of dicts with protein_id, peptide_sequence, position
+        """
+        logger.info(f"Generating {peptide_length}-mer peptides...")
+
+        peptides = []
+        with open(fasta_file) as f:
+            for record in SeqIO.parse(f, "fasta"):
+                protein_id = record.id
+                sequence = str(record.seq)
+
+                for i in range(len(sequence) - peptide_length + 1):
+                    peptide = sequence[i:i + peptide_length]
+                    # Skip peptides with ambiguous amino acids
+                    if 'X' not in peptide and '*' not in peptide:
+                        peptides.append({
+                            'protein_id': protein_id,
+                            'peptide_sequence': peptide,
+                            'position': i + 1,
+                            'peptide_length': peptide_length
+                        })
+
+        logger.info(f"Generated {len(peptides)} peptides")
+        return peptides
+
+    @staticmethod
+    def generate_variable_length_peptides(fasta_file: Path, peptide_lengths: List[int]) -> List[Dict]:
+        """Generate peptides of multiple lengths (for Class I)."""
+        logger.info(f"Generating peptides of lengths: {peptide_lengths}")
+
+        peptides = []
+        with open(fasta_file) as f:
+            for record in SeqIO.parse(f, "fasta"):
+                protein_id = record.id
+                sequence = str(record.seq)
+
+                for length in peptide_lengths:
+                    for i in range(len(sequence) - length + 1):
+                        peptide = sequence[i:i + length]
+                        if 'X' not in peptide and '*' not in peptide:
+                            peptides.append({
+                                'protein_id': protein_id,
+                                'peptide_sequence': peptide,
+                                'position': i + 1,
+                                'peptide_length': length
+                            })
+
+        logger.info(f"Generated {len(peptides)} variable-length peptides")
+        return peptides
+
+
+class HLAPredictor:
+    """Base class for HLA binding prediction."""
+
+    def __init__(self, tool_path: Path, output_dir: Path):
+        self.tool_path = tool_path
+        self.output_dir = output_dir
+        self.results_dir = output_dir / "allele_results"
+        self.results_dir.mkdir(parents=True, exist_ok=True)
+
+        if not self.tool_path.exists():
+            raise FileNotFoundError(f"Tool not found: {self.tool_path}")
+
+    def get_completed_alleles(self) -> Set[str]:
+        """Get set of alleles that have already been processed."""
+        completed = set()
+        status_file = self.output_dir / "completed_alleles.json"
+
+        if status_file.exists():
+            with open(status_file) as f:
+                completed = set(json.load(f))
+
+        return completed
+
+    def mark_allele_complete(self, allele: str):
+        """Mark an allele as completed."""
+        completed = self.get_completed_alleles()
+        completed.add(allele)
+
+        status_file = self.output_dir / "completed_alleles.json"
+        with open(status_file, 'w') as f:
+            json.dump(sorted(list(completed)), f, indent=2)
+
+    def predict_allele(self, allele: str, peptide_file: Path) -> Path:
+        """Run prediction for a single allele. Must be implemented by subclass."""
+        raise NotImplementedError
+
+    def run_predictions(self, peptides: List[Dict], alleles: List[str],
+                       n_jobs: int = 1, force: bool = False) -> Path:
+        """
+        Run predictions for all alleles with incremental processing.
+
+        Args:
+            peptides: List of peptide dictionaries
+            alleles: List of HLA alleles
+            n_jobs: Number of parallel jobs
+            force: If True, rerun even completed alleles
+
+        Returns:
+            Path to combined results file
+        """
+        logger.info(f"Running predictions for {len(alleles)} alleles")
+
+        # Write peptides to file
+        peptide_file = self.output_dir / "peptides.txt"
+        with open(peptide_file, 'w') as f:
+            for peptide in peptides:
+                f.write(f"{peptide['peptide_sequence']}\n")
+
+        # Filter to uncompleted alleles
+        completed = set() if force else self.get_completed_alleles()
+        alleles_to_run = [a for a in alleles if a not in completed]
+
+        if alleles_to_run:
+            logger.info(f"Processing {len(alleles_to_run)} alleles ({len(completed)} already completed)")
+        else:
+            logger.info(f"All {len(alleles)} alleles already completed")
+            return self._combine_results(alleles)
+
+        # Create commands for parallel execution
+        commands_file = self.output_dir / "prediction_commands.txt"
+        with open(commands_file, 'w') as f:
+            for allele in alleles_to_run:
+                result_file = self.results_dir / f"{self._sanitize_allele_name(allele)}.txt"
+                cmd = self._build_command(allele, peptide_file, result_file)
+                f.write(f"{cmd}\n")
+
+        # Run in parallel
+        logger.info(f"Running {len(alleles_to_run)} predictions with {n_jobs} parallel jobs...")
+        parallel_cmd = f"cat {commands_file} | parallel -j {n_jobs}"
+
+        try:
+            subprocess.run(parallel_cmd, shell=True, check=True, capture_output=True, text=True)
+            logger.info("Predictions completed successfully")
+
+            # Mark all as complete
+            for allele in alleles_to_run:
+                self.mark_allele_complete(allele)
+
+        except subprocess.CalledProcessError as e:
+            logger.warning(f"Some predictions failed. Check individual results.")
+            # Mark successful ones as complete
+            for allele in alleles_to_run:
+                result_file = self.results_dir / f"{self._sanitize_allele_name(allele)}.txt"
+                if result_file.exists() and result_file.stat().st_size > 0:
+                    self.mark_allele_complete(allele)
+
+        # Combine all results
+        return self._combine_results(alleles)
+
+    def _sanitize_allele_name(self, allele: str) -> str:
+        """Convert allele name to safe filename."""
+        return allele.replace(':', '_').replace('*', '_').replace('/', '_')
+
+    def _build_command(self, allele: str, peptide_file: Path, result_file: Path) -> str:
+        """Build command line for prediction tool."""
+        raise NotImplementedError
+
+    def _combine_results(self, alleles: List[str]) -> Path:
+        """Combine individual allele results into single file."""
+        combined_file = self.output_dir / "combined_results.txt"
+
+        logger.info(f"Combining results from {len(alleles)} alleles...")
+        with open(combined_file, 'w') as outf:
+            for allele in alleles:
+                result_file = self.results_dir / f"{self._sanitize_allele_name(allele)}.txt"
+
+                if not result_file.exists():
+                    logger.warning(f"Missing results for {allele}")
+                    continue
+
+                try:
+                    with open(result_file) as inf:
+                        outf.write(inf.read())
+                        outf.write('\n')
+                except Exception as e:
+                    logger.warning(f"Failed to read {allele}: {e}")
+
+        logger.info(f"Combined results saved to {combined_file}")
+        return combined_file
+
+
+class NetMHCpanPredictor(HLAPredictor):
+    """HLA Class I predictor using netMHCpan."""
+
+    def _build_command(self, allele: str, peptide_file: Path, result_file: Path) -> str:
+        return (f"{self.tool_path} -f {peptide_file} -a {allele} "
+                f"-inptype 1 -xls -xlsfile {result_file}")
+
+
+class NetMHCIIpanPredictor(HLAPredictor):
+    """HLA Class II predictor using netMHCIIpan."""
+
+    def _build_command(self, allele: str, peptide_file: Path, result_file: Path) -> str:
+        return (f"{self.tool_path} -f {peptide_file} -a {allele} "
+                f"-inptype 1 -xls -xlsfile {result_file}")
+
+
+class ResultParser:
+    """Parses prediction results into DataFrame."""
+
+    @staticmethod
+    def parse_netmhc_results(results_file: Path, peptides: List[Dict],
+                            hla_class: str) -> pd.DataFrame:
+        """
+        Parse netMHCpan or netMHCIIpan results.
+
+        Args:
+            results_file: Combined results file
+            peptides: Original peptide list
+            hla_class: 'I' or 'II'
+
+        Returns:
+            DataFrame with columns: protein_id, peptide_sequence, position,
+                                   peptide_length, hla_class, hla_allele,
+                                   score, rank
+        """
+        logger.info(f"Parsing HLA Class {hla_class} results...")
+
+        # Create peptide lookup
+        peptide_lookup = {p['peptide_sequence']: p for p in peptides}
+
+        all_results = []
+        current_allele = None
+
+        with open(results_file) as f:
+            for line in f:
+                line = line.strip()
+
+                if not line:
+                    continue
+
+                # Detect allele name (header line without tabs)
+                if '\t' not in line and (line.startswith('HLA-') or
+                                        line.startswith('DRB') or
+                                        line.startswith('DQA') or
+                                        line.startswith('DPA')):
+                    if 'Pos' not in line:
+                        current_allele = line
+                    continue
+
+                # Skip header lines
+                if line.startswith('Pos') or 'Peptide' in line:
+                    continue
+
+                # Parse data lines
+                parts = line.split('\t')
+                if len(parts) >= 7 and parts[0].isdigit():
+                    try:
+                        peptide_seq = parts[1]
+
+                        # Skip invalid peptides
+                        if not peptide_seq or pd.isna(peptide_seq):
+                            continue
+
+                        # Get score and rank (columns may vary)
+                        score = float(parts[5]) if parts[5] != 'NA' else None
+                        rank = float(parts[6]) if parts[6] != 'NA' else None
+
+                        # For Class II, might be in different columns
+                        if hla_class == 'II' and len(parts) >= 8:
+                            score = float(parts[6]) if parts[6] != 'NA' else None
+                            rank = float(parts[7]) if parts[7] != 'NA' else None
+
+                        # Get protein metadata
+                        peptide_info = peptide_lookup.get(peptide_seq, {})
+
+                        all_results.append({
+                            'protein_id': peptide_info.get('protein_id', 'Unknown'),
+                            'peptide_sequence': peptide_seq,
+                            'position': peptide_info.get('position', 0),
+                            'peptide_length': peptide_info.get('peptide_length', len(peptide_seq)),
+                            'hla_class': hla_class,
+                            'hla_allele': current_allele,
+                            'score': score,
+                            'rank': rank
+                        })
+
+                    except (ValueError, IndexError) as e:
+                        logger.debug(f"Could not parse line: {line[:100]}")
+                        continue
+
+        if not all_results:
+            raise ValueError(f"No valid results found in {results_file}")
+
+        df = pd.DataFrame(all_results)
+        logger.info(f"Parsed {len(df)} Class {hla_class} predictions")
+        return df
+
+
+class HLAEpitopePipeline:
+    """Main pipeline orchestrating the full analysis."""
+
+    def __init__(self, config: AnalysisConfig):
+        self.config = config
+        self.output_dir = config.output_dir
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Initialize components
+        self.downloader = ProteomeDownloader(config.email)
+        self.signalp = SignalPFilter(config.signalp_model_dir)
+        self.peptide_gen = PeptideGenerator()
+
+    def run_class_i_analysis(self, proteome_file: Path,
+                            alleles: List[str]) -> pd.DataFrame:
+        """Run HLA Class I analysis on all proteins."""
+        logger.info("=== HLA Class I Analysis (all proteins) ===")
+
+        # Generate peptides
+        peptides = self.peptide_gen.generate_variable_length_peptides(
+            proteome_file,
+            self.config.class_i_peptide_lengths
+        )
+
+        # Run predictions
+        class_i_dir = self.output_dir / "class_i"
+        predictor = NetMHCpanPredictor(self.config.netmhcpan_path, class_i_dir)
+        results_file = predictor.run_predictions(
+            peptides, alleles, self.config.n_parallel_jobs
+        )
+
+        # Parse results
+        df = ResultParser.parse_netmhc_results(results_file, peptides, 'I')
+        return df
+
+    def run_class_ii_analysis(self, proteome_file: Path,
+                             alleles: List[str]) -> pd.DataFrame:
+        """Run HLA Class II analysis on secreted proteins only."""
+        logger.info("=== HLA Class II Analysis (secreted proteins) ===")
+
+        # Filter for secreted proteins
+        signalp_dir = self.output_dir / "signalp"
+        secreted_ids = self.signalp.run(proteome_file, signalp_dir, organism_type="other")
+
+        secreted_file = self.output_dir / f"{self.config.organism_name}_secreted.fasta"
+        self.signalp.filter_fasta(proteome_file, secreted_file, secreted_ids)
+
+        # Generate peptides
+        peptides = self.peptide_gen.generate_peptides(
+            secreted_file,
+            self.config.class_ii_peptide_length
+        )
+
+        # Run predictions
+        class_ii_dir = self.output_dir / "class_ii"
+        predictor = NetMHCIIpanPredictor(self.config.netmhciipan_path, class_ii_dir)
+        results_file = predictor.run_predictions(
+            peptides, alleles, self.config.n_parallel_jobs
+        )
+
+        # Parse results
+        df = ResultParser.parse_netmhc_results(results_file, peptides, 'II')
+        return df
+
+    def run_full_analysis(self, class_i_alleles: List[str],
+                         class_ii_alleles: List[str]) -> Path:
+        """
+        Run complete analysis pipeline.
+
+        Args:
+            class_i_alleles: List of HLA Class I alleles
+            class_ii_alleles: List of HLA Class II alleles
+
+        Returns:
+            Path to combined results CSV
+        """
+        logger.info("=== Starting HLA Epitope Prediction Pipeline ===")
+        logger.info(f"Organism: {self.config.organism_query}")
+        logger.info(f"Output directory: {self.output_dir}")
+
+        # Download proteome
+        proteome_file = self.output_dir / f"{self.config.organism_name}_proteome.fasta"
+        if not proteome_file.exists():
+            self.downloader.download(
+                self.config.organism_query,
+                proteome_file,
+                self.config.max_proteins
+            )
+        else:
+            logger.info(f"Using existing proteome: {proteome_file}")
+
+        # Run Class I analysis
+        class_i_df = self.run_class_i_analysis(proteome_file, class_i_alleles)
+
+        # Run Class II analysis
+        class_ii_df = self.run_class_ii_analysis(proteome_file, class_ii_alleles)
+
+        # Combine results
+        logger.info("=== Combining Results ===")
+        combined_df = pd.concat([class_i_df, class_ii_df], ignore_index=True)
+
+        # Save results
+        results_file = self.output_dir / f"{self.config.organism_name}_hla_predictions.csv"
+        combined_df.to_csv(results_file, index=False)
+
+        logger.info("=== Analysis Complete ===")
+        logger.info(f"Class I: {len(class_i_df)} predictions")
+        logger.info(f"Class II: {len(class_ii_df)} predictions")
+        logger.info(f"Total: {len(combined_df)} predictions")
+        logger.info(f"Results: {results_file}")
+
+        return results_file
+
+
+def load_alleles_from_file(file_path: Path) -> List[str]:
+    """Load alleles from a text file (one per line)."""
+    if not file_path.exists():
+        raise FileNotFoundError(f"Allele file not found: {file_path}")
+
+    with open(file_path) as f:
+        alleles = [line.strip() for line in f if line.strip() and not line.startswith('#')]
+
+    logger.info(f"Loaded {len(alleles)} alleles from {file_path}")
+    return alleles
+
+
+def get_default_class_i_alleles() -> List[str]:
+    """Return default HLA Class I alleles."""
+    return [
+        'HLA-A01:01', 'HLA-A02:01', 'HLA-A03:01', 'HLA-A11:01',
+        'HLA-A23:01', 'HLA-A24:02', 'HLA-A25:01', 'HLA-A29:02',
+        'HLA-A30:01', 'HLA-A31:01', 'HLA-A32:01', 'HLA-A68:01',
+        'HLA-B07:02', 'HLA-B08:01', 'HLA-B13:02', 'HLA-B14:01',
+        'HLA-B14:02', 'HLA-B15:01', 'HLA-B18:01', 'HLA-B27:05',
+        'HLA-B37:01', 'HLA-B38:01', 'HLA-B40:01', 'HLA-B44:02',
+        'HLA-B44:03', 'HLA-B49:01', 'HLA-B50:01', 'HLA-B51:01',
+        'HLA-B55:01', 'HLA-B57:01', 'HLA-C01:02', 'HLA-C02:02',
+        'HLA-C03:03', 'HLA-C03:04', 'HLA-C04:01', 'HLA-C05:01',
+        'HLA-C06:02', 'HLA-C07:01', 'HLA-C07:02', 'HLA-C07:04',
+        'HLA-C08:02', 'HLA-C12:03', 'HLA-C14:02', 'HLA-C15:02',
+        'HLA-C16:01'
+    ]
+
+
+def get_default_class_ii_alleles() -> List[str]:
+    """Return default HLA Class II alleles."""
+    dr_alleles = [
+        'DRB5_9901', 'DRB1_1301', 'DRB1_0701', 'DRB1_0801',
+        'DRB1_0301', 'DRB1_0101', 'DRB1_1601', 'DRB5_0202',
+        'DRB1_1401', 'DRB1_1501', 'DRB5_0101', 'DRB1_0102',
+        'DRB1_1201', 'DRB1_1302', 'DRB3_0301', 'DRB1_1303',
+        'DRB3_0101', 'DRB3_9901', 'DRB4_0101', 'DRB4_0103',
+        'DRB4_9901'
+    ]
+
+    # DP/DQ combinations
+    dp_dq_combinations = [
+        'HLA-DPA10103-DPB10101', 'HLA-DPA10201-DPB10101', 'HLA-DPA10202-DPB10101',
+        'HLA-DQA10101-DPB10101', 'HLA-DQA10102-DPB10101', 'HLA-DQA10103-DPB10101',
+        'HLA-DQA10201-DPB10101', 'HLA-DQA10301-DPB10101', 'HLA-DQA10401-DPB10101',
+        'HLA-DQA10501-DPB10101', 'HLA-DPA10103-DPB10401', 'HLA-DPA10201-DPB10401',
+        'HLA-DPA10202-DPB10401', 'HLA-DQA10101-DPB10401', 'HLA-DQA10102-DPB10401',
+        'HLA-DQA10103-DPB10401', 'HLA-DQA10201-DPB10401', 'HLA-DQA10301-DPB10401',
+        'HLA-DQA10401-DPB10401', 'HLA-DQA10501-DPB10401', 'HLA-DPA10103-DPB10402',
+        'HLA-DPA10201-DPB10402', 'HLA-DPA10202-DPB10402', 'HLA-DQA10101-DPB10402',
+        'HLA-DQA10102-DPB10402', 'HLA-DQA10103-DPB10402', 'HLA-DQA10201-DPB10402',
+        'HLA-DQA10301-DPB10402', 'HLA-DQA10401-DPB10402', 'HLA-DQA10501-DPB10402',
+        'HLA-DPA10103-DPB10501', 'HLA-DPA10201-DPB10501', 'HLA-DPA10202-DPB10501',
+        'HLA-DQA10101-DPB10501', 'HLA-DQA10102-DPB10501', 'HLA-DQA10103-DPB10501',
+        'HLA-DQA10201-DPB10501', 'HLA-DQA10301-DPB10501', 'HLA-DQA10401-DPB10501',
+        'HLA-DQA10501-DPB10501', 'HLA-DPA10103-DPB11001', 'HLA-DPA10201-DPB11001',
+        'HLA-DPA10202-DPB11001', 'HLA-DQA10101-DPB11001', 'HLA-DQA10102-DPB11001',
+        'HLA-DQA10103-DPB11001', 'HLA-DQA10201-DPB11001', 'HLA-DQA10301-DPB11001',
+        'HLA-DQA10401-DPB11001', 'HLA-DQA10501-DPB11001', 'HLA-DPA10103-DPB11101',
+        'HLA-DPA10201-DPB11101', 'HLA-DPA10202-DPB11101', 'HLA-DQA10101-DPB11101',
+        'HLA-DQA10102-DPB11101', 'HLA-DQA10103-DPB11101', 'HLA-DQA10201-DPB11101',
+        'HLA-DQA10301-DPB11101', 'HLA-DQA10401-DPB11101', 'HLA-DQA10501-DPB11101',
+        'HLA-DPA10103-DPB11301', 'HLA-DPA10201-DPB11301', 'HLA-DPA10202-DPB11301',
+        'HLA-DQA10101-DPB11301', 'HLA-DQA10102-DPB11301', 'HLA-DQA10103-DPB11301',
+        'HLA-DQA10201-DPB11301', 'HLA-DQA10301-DPB11301', 'HLA-DQA10401-DPB11301',
+        'HLA-DQA10501-DPB11301', 'HLA-DPA10103-DPB11701', 'HLA-DPA10201-DPB11701',
+        'HLA-DPA10202-DPB11701', 'HLA-DQA10101-DPB11701', 'HLA-DQA10102-DPB11701',
+        'HLA-DQA10103-DPB11701', 'HLA-DQA10201-DPB11701', 'HLA-DQA10301-DPB11701',
+        'HLA-DQA10401-DPB11701', 'HLA-DQA10501-DPB11701', 'HLA-DPA10103-DQB10501',
+        'HLA-DPA10201-DQB10501', 'HLA-DPA10202-DQB10501', 'HLA-DQA10101-DQB10501',
+        'HLA-DQA10102-DQB10501', 'HLA-DQA10103-DQB10501', 'HLA-DQA10201-DQB10501',
+        'HLA-DQA10301-DQB10501', 'HLA-DQA10401-DQB10501', 'HLA-DQA10501-DQB10501',
+        'HLA-DPA10103-DQB10603', 'HLA-DPA10201-DQB10603', 'HLA-DPA10202-DQB10603',
+        'HLA-DQA10101-DQB10603', 'HLA-DQA10102-DQB10603', 'HLA-DQA10103-DQB10603',
+        'HLA-DQA10201-DQB10603', 'HLA-DQA10301-DQB10603', 'HLA-DQA10401-DQB10603',
+        'HLA-DQA10501-DQB10603', 'HLA-DPA10103-DQB10202', 'HLA-DPA10201-DQB10202',
+        'HLA-DPA10202-DQB10202', 'HLA-DQA10101-DQB10202', 'HLA-DQA10102-DQB10202',
+        'HLA-DQA10103-DQB10202', 'HLA-DQA10201-DQB10202', 'HLA-DQA10301-DQB10202',
+        'HLA-DQA10401-DQB10202', 'HLA-DQA10501-DQB10202', 'HLA-DPA10103-DQB10402',
+        'HLA-DPA10201-DQB10402', 'HLA-DPA10202-DQB10402', 'HLA-DQA10101-DQB10402',
+        'HLA-DQA10102-DQB10402', 'HLA-DQA10103-DQB10402', 'HLA-DQA10201-DQB10402',
+        'HLA-DQA10301-DQB10402', 'HLA-DQA10401-DQB10402', 'HLA-DQA10501-DQB10402',
+        'HLA-DPA10103-DQB10201', 'HLA-DPA10201-DQB10201', 'HLA-DPA10202-DQB10201',
+        'HLA-DQA10101-DQB10201', 'HLA-DQA10102-DQB10201', 'HLA-DQA10103-DQB10201',
+        'HLA-DQA10201-DQB10201', 'HLA-DQA10301-DQB10201', 'HLA-DQA10401-DQB10201',
+        'HLA-DQA10501-DQB10201', 'HLA-DPA10103-DQB10301', 'HLA-DPA10201-DQB10301',
+        'HLA-DPA10202-DQB10301', 'HLA-DQA10101-DQB10301', 'HLA-DQA10102-DQB10301',
+        'HLA-DQA10103-DQB10301', 'HLA-DQA10201-DQB10301', 'HLA-DQA10301-DQB10301',
+        'HLA-DQA10401-DQB10301', 'HLA-DQA10501-DQB10301', 'HLA-DPA10103-DQB10302',
+        'HLA-DPA10201-DQB10302', 'HLA-DPA10202-DQB10302', 'HLA-DQA10101-DQB10302',
+        'HLA-DQA10102-DQB10302', 'HLA-DQA10103-DQB10302', 'HLA-DQA10201-DQB10302',
+        'HLA-DQA10301-DQB10302', 'HLA-DQA10401-DQB10302', 'HLA-DQA10501-DQB10302',
+        'HLA-DPA10103-DQB10303', 'HLA-DPA10201-DQB10303', 'HLA-DPA10202-DQB10303',
+        'HLA-DQA10101-DQB10303', 'HLA-DQA10102-DQB10303', 'HLA-DQA10103-DQB10303',
+        'HLA-DQA10201-DQB10303', 'HLA-DQA10301-DQB10303', 'HLA-DQA10401-DQB10303',
+        'HLA-DQA10501-DQB10303', 'HLA-DPA10103-DQB10502', 'HLA-DPA10201-DQB10502',
+        'HLA-DPA10202-DQB10502', 'HLA-DQA10101-DQB10502', 'HLA-DQA10102-DQB10502',
+        'HLA-DQA10103-DQB10502', 'HLA-DQA10201-DQB10502', 'HLA-DQA10301-DQB10502',
+        'HLA-DQA10401-DQB10502', 'HLA-DQA10501-DQB10502', 'HLA-DPA10103-DQB10503',
+        'HLA-DPA10201-DQB10503', 'HLA-DPA10202-DQB10503', 'HLA-DQA10101-DQB10503',
+        'HLA-DQA10102-DQB10503', 'HLA-DQA10103-DQB10503', 'HLA-DQA10201-DQB10503',
+        'HLA-DQA10301-DQB10503', 'HLA-DQA10401-DQB10503', 'HLA-DQA10501-DQB10503',
+        'HLA-DPA10103-DQB10602', 'HLA-DPA10201-DQB10602', 'HLA-DPA10202-DQB10602',
+        'HLA-DQA10101-DQB10602', 'HLA-DQA10102-DQB10602', 'HLA-DQA10103-DQB10602',
+        'HLA-DQA10201-DQB10602', 'HLA-DQA10301-DQB10602', 'HLA-DQA10401-DQB10602',
+        'HLA-DQA10501-DQB10602', 'HLA-DPA10103-DQB10604', 'HLA-DPA10201-DQB10604',
+        'HLA-DPA10202-DQB10604', 'HLA-DQA10101-DQB10604', 'HLA-DQA10102-DQB10604',
+        'HLA-DQA10103-DQB10604', 'HLA-DQA10201-DQB10604', 'HLA-DQA10301-DQB10604',
+        'HLA-DQA10401-DQB10604', 'HLA-DQA10501-DQB10604', 'HLA-DPA10103-DQB10609',
+        'HLA-DPA10201-DQB10609', 'HLA-DPA10202-DQB10609', 'HLA-DQA10101-DQB10609',
+        'HLA-DQA10102-DQB10609', 'HLA-DQA10103-DQB10609', 'HLA-DQA10201-DQB10609',
+        'HLA-DQA10301-DQB10609', 'HLA-DQA10401-DQB10609', 'HLA-DQA10501-DQB10609'
+    ]
+
+    return dr_alleles + dp_dq_combinations
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="HLA Epitope Prediction Pipeline with incremental processing",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Run with default alleles
+  python hla_epitope_predictor.py --email user@example.com --organism "Variola virus[Organism]"
+
+  # Run with custom allele files
+  python hla_epitope_predictor.py --email user@example.com --organism "HIV[Organism]" \\
+      --class-i-alleles class_i_alleles.txt --class-ii-alleles class_ii_alleles.txt
+
+  # Add new alleles (will skip already-completed ones)
+  python hla_epitope_predictor.py --email user@example.com --organism "Variola virus[Organism]" \\
+      --class-i-alleles new_alleles.txt --output-dir ./existing_analysis
+        """
+    )
+
+    # Required arguments
+    parser.add_argument("--email", required=True,
+                       help="Email for NCBI Entrez API")
+    parser.add_argument("--organism", required=True,
+                       help="NCBI organism query (e.g., 'Variola virus[Organism]')")
+
+    # Optional arguments
+    parser.add_argument("--output-dir", default="./hla_analysis",
+                       help="Output directory (default: ./hla_analysis)")
+    parser.add_argument("--name",
+                       help="Name for output files (default: auto-generated from organism)")
+
+    # Allele specification
+    parser.add_argument("--class-i-alleles", type=Path,
+                       help="File with Class I alleles (one per line). Uses defaults if not provided.")
+    parser.add_argument("--class-ii-alleles", type=Path,
+                       help="File with Class II alleles (one per line). Uses defaults if not provided.")
+
+    # Tool paths
+    parser.add_argument("--netmhcpan-path",
+                       default="/home/jdn321/software/netMHCpan-4.2/netMHCpan",
+                       help="Path to netMHCpan executable")
+    parser.add_argument("--netmhciipan-path",
+                       default="/home/jdn321/software/netMHCIIpan-4.3/netMHCIIpan",
+                       help="Path to netMHCIIpan executable")
+    parser.add_argument("--signalp-model-dir",
+                       default="/home/jdn321/software/signalp6_fast/signalp-6-package/models/",
+                       help="Path to SignalP6 models directory")
+
+    # Processing parameters
+    parser.add_argument("--n-jobs", type=int, default=20,
+                       help="Number of parallel jobs (default: 20)")
+    parser.add_argument("--max-proteins", type=int, default=15000,
+                       help="Maximum proteins to download (default: 15000)")
+
+    args = parser.parse_args()
+
+    # Generate organism name if not provided
+    organism_name = args.name
+    if not organism_name:
+        import re
+        organism_name = re.sub(r'[^\w\-_.]', '_', args.organism)
+
+    # Create config
+    config = AnalysisConfig(
+        email=args.email,
+        organism_query=args.organism,
+        output_dir=args.output_dir,
+        organism_name=organism_name,
+        netmhcpan_path=args.netmhcpan_path,
+        netmhciipan_path=args.netmhciipan_path,
+        signalp_model_dir=args.signalp_model_dir,
+        n_parallel_jobs=args.n_jobs,
+        max_proteins=args.max_proteins
+    )
+
+    # Load or use default alleles
+    if args.class_i_alleles:
+        class_i_alleles = load_alleles_from_file(args.class_i_alleles)
+    else:
+        class_i_alleles = get_default_class_i_alleles()
+        logger.info(f"Using {len(class_i_alleles)} default Class I alleles")
+
+    if args.class_ii_alleles:
+        class_ii_alleles = load_alleles_from_file(args.class_ii_alleles)
+    else:
+        class_ii_alleles = get_default_class_ii_alleles()
+        logger.info(f"Using {len(class_ii_alleles)} default Class II alleles")
+
+    # Run pipeline
+    try:
+        pipeline = HLAEpitopePipeline(config)
+        result_file = pipeline.run_full_analysis(class_i_alleles, class_ii_alleles)
+
+        print(f"\n{'='*80}")
+        print("Analysis completed successfully!")
+        print(f"Results saved to: {result_file}")
+        print(f"{'='*80}\n")
+
+    except Exception as e:
+        logger.error(f"Analysis failed: {e}", exc_info=True)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

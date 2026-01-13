@@ -1,0 +1,344 @@
+# HLA Epitope Prediction Pipeline
+
+Comprehensive pipeline for predicting HLA Class I and II epitopes from pathogen proteomes with support for incremental processing and result caching.
+
+## Features
+
+- **HLA Class I & II prediction** using netMHCpan and netMHCIIpan
+- **Incremental processing**: Add new alleles without re-running completed ones
+- **Progress tracking**: Resume from failures automatically
+- **Configurable alleles**: Load from external files
+- **Memory-efficient**: Adjustable parallelization
+- **Modular design**: Clean, maintainable code
+
+## Quick Start
+
+### 1. Install Dependencies
+
+```bash
+# Python packages
+pip install biopython pandas
+
+# External tools (adjust paths in scripts):
+# - netMHCpan-4.2
+# - netMHCIIpan-4.3
+# - SignalP 6.0
+# - GNU parallel
+```
+
+### 2. Basic Usage
+
+```bash
+# Make scripts executable
+chmod +x hla_epitope_predictor.py analyze_predictions.py
+
+# Run analysis for one organism
+python3 hla_epitope_predictor.py \
+    --email your@email.com \
+    --organism "Variola virus[Organism] AND RefSeq[Filter]" \
+    --output-dir ./smallpox_analysis
+```
+
+### 3. Batch Analysis
+
+```bash
+# Edit run_pathogen_analysis.sh to set your email and paths
+nano run_pathogen_analysis.sh
+
+# Run for all organisms
+chmod +x run_pathogen_analysis.sh
+./run_pathogen_analysis.sh
+```
+
+### 4. Analyze Results
+
+```bash
+python3 analyze_predictions.py --batch \
+    smallpox_analysis HIV_analysis plague_analysis \
+    --output-dir ./analyzed_results
+```
+
+## File Structure
+
+```
+scripts/HLA_epitope_prediction/
+├── hla_epitope_predictor.py       # Main prediction pipeline
+├── analyze_predictions.py          # Results analysis
+├── run_pathogen_analysis.sh        # Batch runner
+├── alleles_class_i_default.txt     # Default Class I alleles (45)
+├── alleles_class_ii_default.txt    # Default Class II alleles (189)
+├── README.md                        # This file
+├── IMPROVEMENTS.md                  # Detailed documentation
+└── requirements.txt                 # Python dependencies
+```
+
+## Usage Examples
+
+### Example 1: Run with Default Alleles
+
+```bash
+python3 hla_epitope_predictor.py \
+    --email user@example.com \
+    --organism "HIV[Organism] AND RefSeq[Filter]" \
+    --output-dir ./HIV_analysis \
+    --n-jobs 40
+```
+
+### Example 2: Custom Allele Files
+
+```bash
+# Create custom allele list
+cat > my_alleles.txt <<EOF
+HLA-A02:01
+HLA-A24:02
+HLA-B07:02
+EOF
+
+python3 hla_epitope_predictor.py \
+    --email user@example.com \
+    --organism "Variola virus[Organism]" \
+    --class-i-alleles my_alleles.txt \
+    --output-dir ./test_analysis
+```
+
+### Example 3: Adding New Alleles (Incremental)
+
+```bash
+# Initial run
+python3 hla_epitope_predictor.py \
+    --email user@example.com \
+    --organism "Variola virus[Organism]" \
+    --output-dir ./smallpox_analysis
+
+# Add new alleles to file
+echo "HLA-A24:03" >> alleles_class_i_default.txt
+echo "HLA-B35:01" >> alleles_class_i_default.txt
+
+# Re-run: only new alleles are processed
+python3 hla_epitope_predictor.py \
+    --email user@example.com \
+    --organism "Variola virus[Organism]" \
+    --output-dir ./smallpox_analysis  # Same directory!
+```
+
+### Example 4: Analyze Results
+
+```bash
+# Single organism
+python3 analyze_predictions.py \
+    --input smallpox_analysis/smallpox_hla_predictions.csv \
+    --class-i-threshold 0.5 \
+    --class-ii-threshold 1.0
+
+# Multiple organisms
+python3 analyze_predictions.py --batch \
+    smallpox_analysis \
+    HIV_analysis \
+    plague_analysis \
+    --output-dir ./analyzed_results
+```
+
+## Output Files
+
+After running the pipeline:
+
+```
+output_dir/
+├── organism_proteome.fasta              # Downloaded proteome
+├── organism_secreted.fasta              # Filtered for Class II
+├── signalp/                             # SignalP results
+├── class_i/                             # Class I analysis
+│   ├── peptides.txt
+│   ├── completed_alleles.json           # Progress tracking!
+│   ├── allele_results/                  # Per-allele results
+│   │   ├── HLA-A01_01.txt
+│   │   ├── HLA-A02_01.txt
+│   │   └── ...
+│   └── combined_results.txt
+├── class_ii/                            # Class II analysis
+│   ├── peptides.txt
+│   ├── completed_alleles.json
+│   ├── allele_results/
+│   └── combined_results.txt
+└── organism_hla_predictions.csv         # Final results!
+```
+
+## Result Format
+
+The `*_hla_predictions.csv` contains:
+
+| Column | Description |
+|--------|-------------|
+| `protein_id` | Source protein identifier from NCBI |
+| `peptide_sequence` | Peptide sequence (8-11 AA for Class I, 15 AA for Class II) |
+| `position` | Position in source protein |
+| `peptide_length` | Length of peptide |
+| `hla_class` | 'I' or 'II' |
+| `hla_allele` | HLA allele name |
+| `score` | Binding score |
+| `rank` | Percentile rank (lower = stronger binding) |
+
+## Interpreting Results
+
+### Binding Thresholds
+
+Common thresholds for `rank` (%Rank):
+
+| Category | Class I | Class II |
+|----------|---------|----------|
+| Very strong | < 0.05 | < 0.1 |
+| Strong | < 0.5 | < 1.0 |
+| Weak | < 2.0 | < 5.0 |
+
+### Analysis Workflow
+
+```bash
+# 1. Filter strong binders
+python3 -c "
+import pandas as pd
+df = pd.read_csv('organism_hla_predictions.csv')
+strong = df[(df['hla_class']=='I') & (df['rank']<0.5)]
+print(f'Strong Class I binders: {len(strong)}')
+"
+
+# 2. Find proteins with broad HLA coverage
+python3 -c "
+import pandas as pd
+df = pd.read_csv('organism_hla_predictions.csv')
+strong_i = df[(df['hla_class']=='I') & (df['rank']<0.5)]
+coverage = strong_i.groupby('protein_id')['hla_allele'].nunique()
+top_proteins = coverage.sort_values(ascending=False).head(10)
+print('Top proteins by HLA coverage:')
+print(top_proteins)
+"
+```
+
+## Memory Management
+
+Adjust `--n-jobs` based on available memory and proteome size:
+
+| Proteome Size | Proteins | Recommended --n-jobs | Memory |
+|---------------|----------|---------------------|--------|
+| Small         | < 500    | 40-60               | ~40GB  |
+| Medium        | 500-2000 | 30-40               | ~30GB  |
+| Large         | > 2000   | 20-30               | ~20GB  |
+
+**Rule of thumb**: Each parallel job needs ~1GB RAM.
+
+## Troubleshooting
+
+### Issue: Script fails partway through
+
+**Solution**: Just re-run the same command. Completed alleles are automatically skipped.
+
+```bash
+# Check progress
+cat output_dir/class_i/completed_alleles.json
+cat output_dir/class_ii/completed_alleles.json
+```
+
+### Issue: Out of memory errors
+
+**Solution**: Reduce `--n-jobs`:
+
+```bash
+python3 hla_epitope_predictor.py \
+    --organism "Large organism[Organism]" \
+    --n-jobs 15  # Reduced from default 20
+```
+
+### Issue: Too many open files
+
+**Solution**: Increase system limits:
+
+```bash
+ulimit -n 4096
+```
+
+### Issue: Can't find netMHC tools
+
+**Solution**: Specify paths explicitly:
+
+```bash
+python3 hla_epitope_predictor.py \
+    --netmhcpan-path /path/to/netMHCpan \
+    --netmhciipan-path /path/to/netMHCIIpan \
+    --signalp-model-dir /path/to/signalp/models/
+```
+
+## Comparison with Previous Version
+
+| Feature | Old Version | New Version |
+|---------|-------------|-------------|
+| Alleles | Hardcoded in Python | External text files |
+| Adding alleles | Re-run all (hours) | Only new ones (minutes) |
+| Progress tracking | None | `completed_alleles.json` |
+| Resume capability | No | Yes (automatic) |
+| Memory usage | ~80GB (80 jobs) | ~20-40GB (20-40 jobs) |
+| Error handling | Fail entire run | Continue on errors |
+| Code organization | Monolithic (1119 lines) | Modular (950 lines) |
+| Documentation | Limited | Comprehensive |
+
+See `IMPROVEMENTS.md` for detailed comparison.
+
+## Advanced Usage
+
+### Check Which Alleles Are Supported
+
+```bash
+# List netMHCpan supported alleles
+/path/to/netMHCpan -listMHC
+
+# List netMHCIIpan supported alleles
+/path/to/netMHCIIpan -list
+```
+
+### Force Re-run Specific Allele
+
+```bash
+# Remove from completed list
+python3 -c "
+import json
+with open('output_dir/class_i/completed_alleles.json') as f:
+    completed = set(json.load(f))
+completed.discard('HLA-A02:01')
+with open('output_dir/class_i/completed_alleles.json', 'w') as f:
+    json.dump(sorted(list(completed)), f)
+"
+
+# Re-run
+python3 hla_epitope_predictor.py --organism "..." --output-dir output_dir
+```
+
+### Export for Downstream Analysis
+
+```bash
+# Export strong binders for vaccine design
+python3 -c "
+import pandas as pd
+df = pd.read_csv('organism_hla_predictions.csv')
+strong = df[(df['rank'] < 0.5)]
+strong.to_csv('strong_binders.csv', index=False)
+print(f'Exported {len(strong)} strong binders')
+"
+```
+
+## Citation
+
+If you use this pipeline, please cite the underlying tools:
+
+- **netMHCpan**: Reynisson et al. (2020) Nucleic Acids Res.
+- **netMHCIIpan**: Reynisson et al. (2020) Nucleic Acids Res.
+- **SignalP 6.0**: Teufel et al. (2022) Nat Biotechnol.
+
+## Support
+
+For issues or questions:
+1. Check `IMPROVEMENTS.md` for detailed documentation
+2. Review log output for error messages
+3. Verify tool paths are correct
+4. Check `completed_alleles.json` for progress
+
+## License
+
+This pipeline is provided as-is for academic research.

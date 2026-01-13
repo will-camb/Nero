@@ -43,13 +43,15 @@ class AnalysisConfig:
     signalp_model_dir: Path
     n_parallel_jobs: int = 20
     class_i_peptide_lengths: List[int] = None
+    class_i_step_size: int = 3
     class_ii_peptide_length: int = 15
+    class_ii_step_size: int = 3
     batch_size_proteins: int = 100
     max_proteins: int = 15000
 
     def __post_init__(self):
         if self.class_i_peptide_lengths is None:
-            self.class_i_peptide_lengths = [8, 9, 10, 11]
+            self.class_i_peptide_lengths = [9]  # Conservative default: 9-mers only
         self.output_dir = Path(self.output_dir)
         self.netmhcpan_path = Path(self.netmhcpan_path)
         self.netmhciipan_path = Path(self.netmhciipan_path)
@@ -233,18 +235,19 @@ class PeptideGenerator:
     """Generates peptides from protein sequences."""
 
     @staticmethod
-    def generate_peptides(fasta_file: Path, peptide_length: int) -> List[Dict]:
+    def generate_peptides(fasta_file: Path, peptide_length: int, step_size: int = 1) -> List[Dict]:
         """
         Generate overlapping peptides of fixed length.
 
         Args:
             fasta_file: Input FASTA file
             peptide_length: Length of peptides to generate
+            step_size: Step size for sliding window (default: 1 = fully overlapping)
 
         Returns:
             List of dicts with protein_id, peptide_sequence, position
         """
-        logger.info(f"Generating {peptide_length}-mer peptides...")
+        logger.info(f"Generating {peptide_length}-mer peptides (step={step_size})...")
 
         peptides = []
         with open(fasta_file) as f:
@@ -252,7 +255,7 @@ class PeptideGenerator:
                 protein_id = record.id
                 sequence = str(record.seq)
 
-                for i in range(len(sequence) - peptide_length + 1):
+                for i in range(0, len(sequence) - peptide_length + 1, step_size):
                     peptide = sequence[i:i + peptide_length]
                     # Skip peptides with ambiguous amino acids
                     if 'X' not in peptide and '*' not in peptide:
@@ -267,9 +270,19 @@ class PeptideGenerator:
         return peptides
 
     @staticmethod
-    def generate_variable_length_peptides(fasta_file: Path, peptide_lengths: List[int]) -> List[Dict]:
-        """Generate peptides of multiple lengths (for Class I)."""
-        logger.info(f"Generating peptides of lengths: {peptide_lengths}")
+    def generate_variable_length_peptides(fasta_file: Path, peptide_lengths: List[int], step_size: int = 1) -> List[Dict]:
+        """
+        Generate peptides of multiple lengths (for Class I).
+
+        Args:
+            fasta_file: Input FASTA file
+            peptide_lengths: List of peptide lengths to generate
+            step_size: Step size for sliding window (default: 1 = fully overlapping)
+
+        Returns:
+            List of dicts with protein_id, peptide_sequence, position, peptide_length
+        """
+        logger.info(f"Generating peptides of lengths: {peptide_lengths} (step={step_size})")
 
         peptides = []
         with open(fasta_file) as f:
@@ -278,7 +291,7 @@ class PeptideGenerator:
                 sequence = str(record.seq)
 
                 for length in peptide_lengths:
-                    for i in range(len(sequence) - length + 1):
+                    for i in range(0, len(sequence) - length + 1, step_size):
                         peptide = sequence[i:i + length]
                         if 'X' not in peptide and '*' not in peptide:
                             peptides.append({
@@ -548,11 +561,14 @@ class HLAEpitopePipeline:
                             alleles: List[str]) -> pd.DataFrame:
         """Run HLA Class I analysis on all proteins."""
         logger.info("=== HLA Class I Analysis (all proteins) ===")
+        logger.info(f"Peptide lengths: {self.config.class_i_peptide_lengths}")
+        logger.info(f"Step size: {self.config.class_i_step_size}")
 
         # Generate peptides
         peptides = self.peptide_gen.generate_variable_length_peptides(
             proteome_file,
-            self.config.class_i_peptide_lengths
+            self.config.class_i_peptide_lengths,
+            self.config.class_i_step_size
         )
 
         # Run predictions
@@ -570,6 +586,8 @@ class HLAEpitopePipeline:
                              alleles: List[str]) -> pd.DataFrame:
         """Run HLA Class II analysis on secreted proteins only."""
         logger.info("=== HLA Class II Analysis (secreted proteins) ===")
+        logger.info(f"Peptide length: {self.config.class_ii_peptide_length}")
+        logger.info(f"Step size: {self.config.class_ii_step_size}")
 
         # Filter for secreted proteins
         signalp_dir = self.output_dir / "signalp"
@@ -581,7 +599,8 @@ class HLAEpitopePipeline:
         # Generate peptides
         peptides = self.peptide_gen.generate_peptides(
             secreted_file,
-            self.config.class_ii_peptide_length
+            self.config.class_ii_peptide_length,
+            self.config.class_ii_step_size
         )
 
         # Run predictions
@@ -610,6 +629,12 @@ class HLAEpitopePipeline:
         logger.info("=== Starting HLA Epitope Prediction Pipeline ===")
         logger.info(f"Organism: {self.config.organism_query}")
         logger.info(f"Output directory: {self.output_dir}")
+        logger.info("")
+        logger.info("Configuration:")
+        logger.info(f"  Class I: {len(class_i_alleles)} alleles, lengths={self.config.class_i_peptide_lengths}, step={self.config.class_i_step_size}")
+        logger.info(f"  Class II: {len(class_ii_alleles)} alleles, length={self.config.class_ii_peptide_length}, step={self.config.class_ii_step_size}")
+        logger.info(f"  Parallel jobs: {self.config.n_parallel_jobs}")
+        logger.info("")
 
         # Download proteome
         proteome_file = self.output_dir / f"{self.config.organism_name}_proteome.fasta"
@@ -769,7 +794,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Run with default alleles
+  # Run with conservative defaults (9-mers, step=3, ~10x faster)
   python hla_epitope_predictor.py --email user@example.com --organism "Variola virus[Organism]"
 
   # Run with custom allele files
@@ -779,6 +804,14 @@ Examples:
   # Add new alleles (will skip already-completed ones)
   python hla_epitope_predictor.py --email user@example.com --organism "Variola virus[Organism]" \\
       --class-i-alleles new_alleles.txt --output-dir ./existing_analysis
+
+  # Comprehensive mode (all lengths, step=1) for thorough analysis
+  python hla_epitope_predictor.py --email user@example.com --organism "HIV[Organism]" \\
+      --class-i-lengths 8 9 10 11 --class-i-step 1 --class-ii-step 1
+
+  # Ultra-fast screening mode (non-overlapping peptides)
+  python hla_epitope_predictor.py --email user@example.com --organism "Large organism[Organism]" \\
+      --class-i-step 9 --class-ii-step 15
         """
     )
 
@@ -817,6 +850,16 @@ Examples:
     parser.add_argument("--max-proteins", type=int, default=15000,
                        help="Maximum proteins to download (default: 15000)")
 
+    # Peptide generation parameters
+    parser.add_argument("--class-i-lengths", type=int, nargs='+', default=[9],
+                       help="Class I peptide lengths (default: 9). Example: --class-i-lengths 9 10 11")
+    parser.add_argument("--class-i-step", type=int, default=3,
+                       help="Step size for Class I peptides (default: 3 = ~10x speedup)")
+    parser.add_argument("--class-ii-length", type=int, default=15,
+                       help="Class II peptide length (default: 15)")
+    parser.add_argument("--class-ii-step", type=int, default=3,
+                       help="Step size for Class II peptides (default: 3 = ~3x speedup)")
+
     args = parser.parse_args()
 
     # Generate organism name if not provided
@@ -835,6 +878,10 @@ Examples:
         netmhciipan_path=args.netmhciipan_path,
         signalp_model_dir=args.signalp_model_dir,
         n_parallel_jobs=args.n_jobs,
+        class_i_peptide_lengths=args.class_i_lengths,
+        class_i_step_size=args.class_i_step,
+        class_ii_peptide_length=args.class_ii_length,
+        class_ii_step_size=args.class_ii_step,
         max_proteins=args.max_proteins
     )
 

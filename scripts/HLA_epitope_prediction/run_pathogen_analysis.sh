@@ -23,11 +23,21 @@ CLASS_II_ALLELES="${SCRIPT_DIR}/alleles_class_ii_default.txt"
 # For small proteomes (<500 proteins), can use 40-60
 N_JOBS=30
 
+# Peptide generation parameters (conservative defaults for ~10x speedup)
+# Class I: 9-mers only (instead of 8,9,10,11)
+# Step size: 3 (instead of 1 = fully overlapping)
+CLASS_I_LENGTHS="9"
+CLASS_I_STEP=3
+CLASS_II_LENGTH=15
+CLASS_II_STEP=3
+
 echo "============================================"
 echo "HLA Epitope Prediction Pipeline"
 echo "============================================"
 echo "Email: $EMAIL"
 echo "Parallel jobs: $N_JOBS"
+echo "Class I: lengths=$CLASS_I_LENGTHS, step=$CLASS_I_STEP"
+echo "Class II: length=$CLASS_II_LENGTH, step=$CLASS_II_STEP"
 echo "Class I alleles: $CLASS_I_ALLELES"
 echo "Class II alleles: $CLASS_II_ALLELES"
 echo ""
@@ -53,6 +63,10 @@ run_analysis() {
         --name "$organism_name" \
         --class-i-alleles "$CLASS_I_ALLELES" \
         --class-ii-alleles "$CLASS_II_ALLELES" \
+        --class-i-lengths $CLASS_I_LENGTHS \
+        --class-i-step "$CLASS_I_STEP" \
+        --class-ii-length "$CLASS_II_LENGTH" \
+        --class-ii-step "$CLASS_II_STEP" \
         --netmhcpan-path "$NETMHCPAN_PATH" \
         --netmhciipan-path "$NETMHCIIPAN_PATH" \
         --signalp-model-dir "$SIGNALP_MODELS" \

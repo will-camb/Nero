@@ -167,13 +167,13 @@ echo "BACTERIAL PATHOGENS"
 echo "=========================================="
 
 # Yersinia pestis - Plague
-run_analysis "Yersinia pestis[Organism] AND RefSeq[Filter]" \
+run_analysis "Yersinia pestis CO92[Organism] AND RefSeq[Filter]" \
              "./plague_analysis" \
              "plague" \
              30
 
 # Mycobacterium tuberculosis - Tuberculosis
-run_analysis "Mycobacterium tuberculosis[Organism] AND RefSeq[Filter]" \
+run_analysis "Mycobacterium tuberculosis H37Rv[Organism] AND RefSeq[Filter]" \
              "./tuberculosis_analysis" \
              "tuberculosis" \
              30
@@ -185,7 +185,7 @@ run_analysis "Mycobacterium leprae[Organism] AND RefSeq[Filter]" \
              30
 
 # Salmonella typhi - Typhoid fever
-run_analysis "Salmonella enterica serovar Typhi[Organism] AND RefSeq[Filter]" \
+run_analysis "Salmonella enterica serovar Typhi CT18[Organism] AND RefSeq[Filter]" \
              "./typhoid_analysis" \
              "typhoid" \
              30
@@ -194,6 +194,12 @@ run_analysis "Salmonella enterica serovar Typhi[Organism] AND RefSeq[Filter]" \
 run_analysis "Treponema pallidum[Organism] AND RefSeq[Filter]" \
              "./syphilis_analysis" \
              "syphilis" \
+             30
+
+# Treponema pallidum pertenue - Yaws
+run_analysis "Treponema pallidum pertenue[Organism] AND RefSeq[Filter]" \
+             "./yaws_analysis" \
+             "yaws" \
              30
 
 # Streptococcus pyogenes - Group A Strep (scarlet fever, necrotizing fasciitis)
@@ -227,7 +233,7 @@ run_analysis "Listeria monocytogenes[Organism] AND RefSeq[Filter]" \
              30
 
 # Leptospira interrogans - Leptospirosis
-run_analysis "Leptospira interrogans[Organism] AND RefSeq[Filter]" \
+run_analysis "Leptospira interrogans Copenhageni[Organism] AND RefSeq[Filter]" \
              "./leptospirosis_analysis" \
              "leptospirosis" \
              20
@@ -262,13 +268,13 @@ echo "PARASITIC PATHOGENS"
 echo "=========================================="
 
 # Plasmodium vivax - Malaria (tertian)
-run_analysis "Plasmodium vivax[Organism] AND RefSeq[Filter]" \
+run_analysis "Plasmodium vivax PvP01[Organism] AND RefSeq[Filter]" \
              "./malaria_vivax_analysis" \
              "malaria_vivax" \
              20
 
 # Plasmodium falciparum - Malaria (falciparum)
-run_analysis "Plasmodium falciparum[Organism] AND RefSeq[Filter]" \
+run_analysis "Plasmodium falciparum 3D7[Organism] AND RefSeq[Filter]" \
              "./malaria_falciparum_analysis" \
              "malaria_falciparum" \
              20

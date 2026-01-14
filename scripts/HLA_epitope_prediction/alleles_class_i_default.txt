@@ -1,8 +1,3 @@
-# HLA Class I Alleles
-# One allele per line. Lines starting with # are comments.
-# All alleles with estimated_HLA_frequency > 0.01 from selection study
-
-# HLA-A alleles
 HLA-A01:01
 HLA-A02:01
 HLA-A03:01
@@ -12,15 +7,13 @@ HLA-A24:02
 HLA-A25:01
 HLA-A29:02
 HLA-A30:01
+HLA-A30:02
 HLA-A31:01
 HLA-A32:01
 HLA-A68:01
-
-# HLA-B alleles
 HLA-B07:02
 HLA-B08:01
 HLA-B13:02
-HLA-B14:01
 HLA-B14:02
 HLA-B15:01
 HLA-B18:01
@@ -28,15 +21,17 @@ HLA-B27:05
 HLA-B37:01
 HLA-B38:01
 HLA-B40:01
+HLA-B41:02
 HLA-B44:02
 HLA-B44:03
+HLA-B45:01
+HLA-B47:01
 HLA-B49:01
-HLA-B50:01
 HLA-B51:01
 HLA-B55:01
+HLA-B56:04
 HLA-B57:01
-
-# HLA-C alleles
+HLA-B58:01
 HLA-C01:02
 HLA-C02:02
 HLA-C03:03
@@ -52,3 +47,4 @@ HLA-C12:03
 HLA-C14:02
 HLA-C15:02
 HLA-C16:01
+HLA-C17:01

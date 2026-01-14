@@ -97,69 +97,69 @@ echo "=========================================="
 run_analysis "Variola virus[Organism] AND RefSeq[Filter]" \
              "./smallpox_analysis" \
              "smallpox" \
-             40
+             50
 
 # Paramyxoviridae
 run_analysis "Measles morbillivirus[Organism] AND RefSeq[Filter]" \
              "./measles_analysis" \
              "measles" \
-             40
+             50
 
 run_analysis "Mumps orthorubulavirus[Organism] AND RefSeq[Filter]" \
              "./mumps_analysis" \
              "mumps" \
-             40
+             50
 
 # Togaviridae
 run_analysis "Rubella virus[Organism] AND RefSeq[Filter]" \
              "./rubella_analysis" \
              "rubella" \
-             40
+             50
 
 # Retroviridae
 run_analysis "Human immunodeficiency virus 1[Organism] AND RefSeq[Filter]" \
              "./HIV_analysis" \
              "HIV" \
-             40
+             50
 
 # Herpesviridae
 run_analysis "Human gammaherpesvirus 4[Organism] AND RefSeq[Filter]" \
              "./EBV_analysis" \
              "EBV" \
-             40
+             50
 
 run_analysis "Human alphaherpesvirus 2[Organism] AND RefSeq[Filter]" \
              "./herpes_simplex_2_analysis" \
              "herpes_simplex_2" \
-             40
+             50
 
 run_analysis "Human alphaherpesvirus 3[Organism] AND RefSeq[Filter]" \
              "./varicella_zoster_analysis" \
              "varicella_zoster" \
-             40
+             50
 
 # Polyomaviridae
 run_analysis "Merkel cell polyomavirus[Organism] AND RefSeq[Filter]" \
              "./merkel_polyomavirus_analysis" \
              "merkel_polyomavirus" \
-             40
+             50
 
 run_analysis "JC polyomavirus[Organism] AND RefSeq[Filter]" \
              "./JC_polyomavirus_analysis" \
              "JC_polyomavirus" \
-             40
+             50
 
 # Hepadnaviridae
 run_analysis "Hepatitis B virus[Organism] AND RefSeq[Filter]" \
              "./hepatitis_B_analysis" \
              "hepatitis_B" \
-             40
+             50
 
 # Flaviviridae
 run_analysis "Hepatitis C virus[Organism] AND RefSeq[Filter]" \
              "./hepatitis_C_analysis" \
              "hepatitis_C" \
-             40
+             50
 
 echo ""
 echo "=========================================="

@@ -80,60 +80,169 @@ run_analysis() {
     fi
 }
 
-# Run analyses for multiple pathogens
+# Run analyses for multiple pathogens using REFERENCE STRAINS
 # Syntax: run_analysis "NCBI query" "output_dir" "name" [n_jobs]
+#
+# Using reference strains provides:
+# - Higher quality annotations
+# - Reduced redundancy
+# - Literature-comparable results
+# - Faster analysis (5-50x fewer proteins)
 
-# Small proteomes (can use more parallel jobs)
-run_analysis "Variola virus[Organism] AND RefSeq[Filter]" \
+echo "=========================================="
+echo "VIRAL PATHOGENS"
+echo "=========================================="
+
+# Small viral proteomes (can use more parallel jobs)
+run_analysis "Variola virus strain Bangladesh-1975[Organism]" \
              "./smallpox_analysis" \
              "smallpox" \
              40
 
-run_analysis "HIV[Organism] AND RefSeq[Filter]" \
+run_analysis "Human immunodeficiency virus 1 HXB2[Organism]" \
              "./HIV_analysis" \
              "HIV" \
              40
 
-run_analysis "measles[Organism] AND RefSeq[Filter]" \
+run_analysis "Measles morbillivirus strain Edmonston[Organism]" \
              "./measles_analysis" \
              "measles" \
              40
 
-# Medium proteomes
-run_analysis "Yersinia pestis CO92[Organism] AND RefSeq[Filter]" \
+run_analysis "Hepatitis B virus subtype adw2[Organism]" \
+             "./hepatitis_b_analysis" \
+             "hepatitis_b" \
+             40
+
+echo ""
+echo "=========================================="
+echo "BACTERIAL PATHOGENS - MAJOR HISTORICAL"
+echo "=========================================="
+
+# Plague - Black Death, Justinian Plague
+run_analysis "Yersinia pestis CO92[Organism]" \
              "./plague_analysis" \
              "plague" \
              30
 
-run_analysis "Mycobacterium leprae[Organism] AND RefSeq[Filter]" \
+# Tuberculosis - major historical killer
+run_analysis "Mycobacterium tuberculosis H37Rv[Organism]" \
+             "./tuberculosis_analysis" \
+             "tuberculosis" \
+             30
+
+# Leprosy - medieval stigmatized disease
+run_analysis "Mycobacterium leprae TN[Organism]" \
              "./leprosy_analysis" \
              "leprosy" \
              30
 
-run_analysis "Borrelia recurrentis[Organism] AND RefSeq[Filter]" \
-             "./B_recurrentis_analysis" \
-             "B_recurrentis" \
+# Typhoid - major waterborne killer
+run_analysis "Salmonella enterica subsp. enterica serovar Typhi str. CT18[Organism]" \
+             "./typhoid_analysis" \
+             "typhoid" \
              30
 
-run_analysis "Treponema pallidum[Organism] AND RefSeq[Filter]" \
-             "./T_pallidum_analysis" \
-             "T_pallidum" \
+# Syphilis - post-Columbian epidemic in Europe
+run_analysis "Treponema pallidum subsp. pallidum str. Nichols[Organism]" \
+             "./syphilis_analysis" \
+             "syphilis" \
              30
 
-# Large proteomes (reduce parallel jobs to avoid memory issues)
-run_analysis "Leptospira interrogans Copenhageni[Organism] AND RefSeq[Filter]" \
-             "./L_interrogans_analysis" \
-             "L_interrogans" \
+echo ""
+echo "=========================================="
+echo "BACTERIAL PATHOGENS - RESPIRATORY"
+echo "=========================================="
+
+# Pneumonia - leading historical cause of death
+run_analysis "Streptococcus pneumoniae TIGR4[Organism]" \
+             "./pneumonia_analysis" \
+             "pneumonia" \
+             30
+
+# Diphtheria - major childhood killer
+run_analysis "Corynebacterium diphtheriae NCTC 13129[Organism]" \
+             "./diphtheria_analysis" \
+             "diphtheria" \
+             30
+
+echo ""
+echo "=========================================="
+echo "BACTERIAL PATHOGENS - STREPTOCOCCAL"
+echo "=========================================="
+
+# Scarlet fever, puerperal fever, necrotizing fasciitis
+run_analysis "Streptococcus pyogenes M1 GAS[Organism]" \
+             "./scarlet_fever_analysis" \
+             "scarlet_fever" \
+             30
+
+echo ""
+echo "=========================================="
+echo "BACTERIAL PATHOGENS - VECTOR-BORNE"
+echo "=========================================="
+
+# Epidemic typhus - war and famine disease
+run_analysis "Rickettsia prowazekii str. Madrid E[Organism]" \
+             "./typhus_analysis" \
+             "typhus" \
+             30
+
+# Relapsing fever - louse-borne epidemic disease
+run_analysis "Borrelia recurrentis A1[Organism]" \
+             "./relapsing_fever_analysis" \
+             "relapsing_fever" \
+             30
+
+echo ""
+echo "=========================================="
+echo "BACTERIAL PATHOGENS - ZOONOTIC"
+echo "=========================================="
+
+# Anthrax - occupational disease of farmers/herders
+run_analysis "Bacillus anthracis str. Ames[Organism]" \
+             "./anthrax_analysis" \
+             "anthrax" \
+             30
+
+# Brucellosis - from livestock, undulant fever
+run_analysis "Brucella melitensis 16M[Organism]" \
+             "./brucellosis_analysis" \
+             "brucellosis" \
+             30
+
+# Listeriosis - foodborne, important in pregnant women
+run_analysis "Listeria monocytogenes EGD-e[Organism]" \
+             "./listeriosis_analysis" \
+             "listeriosis" \
+             30
+
+echo ""
+echo "=========================================="
+echo "BACTERIAL PATHOGENS - WATERBORNE"
+echo "=========================================="
+
+# Cholera - 19th century pandemics in Europe
+run_analysis "Vibrio cholerae O1 biovar El Tor str. N16961[Organism]" \
+             "./cholera_analysis" \
+             "cholera" \
+             30
+
+# Leptospirosis - waterborne, occupational
+run_analysis "Leptospira interrogans serovar Copenhageni str. Fiocruz L1-130[Organism]" \
+             "./leptospirosis_analysis" \
+             "leptospirosis" \
              20
 
-run_analysis "Mycobacterium tuberculosis H37Rv[Organism] AND RefSeq[Filter]" \
-             "./M_tuberculosis_analysis" \
-             "M_tuberculosis" \
-             20
+echo ""
+echo "=========================================="
+echo "PARASITIC PATHOGENS"
+echo "=========================================="
 
-run_analysis "Plasmodium vivax[Organism] AND RefSeq[Filter]" \
-             "./P_vivax_analysis" \
-             "P_vivax" \
+# Malaria - major selective pressure in Mediterranean/southern Europe
+run_analysis "Plasmodium vivax Sal-1[Organism]" \
+             "./malaria_vivax_analysis" \
+             "malaria_vivax" \
              20
 
 echo ""

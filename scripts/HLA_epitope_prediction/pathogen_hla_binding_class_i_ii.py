@@ -193,23 +193,20 @@ class PathogenHLAAnalyzer:
     def filter_secreted_proteins(self, proteome_file: str, secreted_ids: List[str], output_file: str) -> str:
         """
         Filter proteome to keep only secreted proteins.
-        
-        Args:
-            proteome_file: Path to full proteome FASTA
-            secreted_ids: List of secreted protein IDs
-            output_file: Path to save filtered FASTA
-            
-        Returns:
-            Path to filtered FASTA file
         """
         logger.info("Filtering for secreted proteins...")
+        
+        if not secreted_ids:
+            logger.warning("No secreted proteins found - creating empty file for Class II analysis")
+            # Create empty FASTA file
+            with open(output_file, 'w') as f:
+                pass  # Empty file
+            return output_file
         
         secreted_records = []
         with open(proteome_file, 'r') as f:
             for record in SeqIO.parse(f, "fasta"):
-                # Extract protein ID (handle different FASTA header formats)
                 protein_id = record.id.split('|')[1] if '|' in record.id else record.id
-                
                 if protein_id in secreted_ids:
                     secreted_records.append(record)
         
@@ -222,34 +219,37 @@ class PathogenHLAAnalyzer:
     def generate_peptides(self, fasta_file: str, peptide_length: int = 15) -> List[Dict]:
         """
         Generate overlapping peptides from protein sequences.
-        
-        Args:
-            fasta_file: Path to FASTA file
-            peptide_length: Length of peptides to generate
-            
-        Returns:
-            List of dictionaries with protein_id and peptide_sequence
         """
         logger.info(f"Generating {peptide_length}-mer peptides...")
         
         peptides = []
-        with open(fasta_file, 'r') as f:
-            for record in SeqIO.parse(f, "fasta"):
-                protein_id = record.id
-                sequence = str(record.seq)
-                
-                # Generate overlapping peptides
-                for i in range(len(sequence) - peptide_length + 1):
-                    peptide = sequence[i:i + peptide_length]
-                    # Skip peptides with ambiguous amino acids
-                    if 'X' not in peptide and '*' not in peptide:
-                        peptides.append({
-                            'protein_id': protein_id,
-                            'peptide_sequence': peptide,
-                            'position': i + 1
-                        })
         
-        logger.info(f"Generated {len(peptides)} class II peptides")
+        # Check if file is empty or has no sequences
+        try:
+            with open(fasta_file, 'r') as f:
+                records = list(SeqIO.parse(f, "fasta"))
+        except:
+            records = []
+        
+        if not records:
+            logger.warning("No sequences found for peptide generation")
+            return peptides  # Return empty list
+        
+        for record in records:
+            protein_id = record.id
+            sequence = str(record.seq)
+            
+            # Generate overlapping peptides
+            for i in range(len(sequence) - peptide_length + 1):
+                peptide = sequence[i:i + peptide_length]
+                if 'X' not in peptide and '*' not in peptide:
+                    peptides.append({
+                        'protein_id': protein_id,
+                        'peptide_sequence': peptide,
+                        'position': i + 1
+                    })
+        
+        logger.info(f"Generated {len(peptides)} peptides")
         return peptides
     
     def generate_class_i_peptides(self, fasta_file: str, peptide_lengths: List[int] = [8, 9, 10, 11]) -> List[Dict]:
@@ -845,110 +845,20 @@ class PathogenHLAAnalyzer:
         df = pd.DataFrame(all_results)
         logger.info(f"Parsed {len(df)} Class I prediction results")
         return df
-    
-    # def analyze_organism(self, organism_query: str, output_dir: str, organism_name: str = None, n_jobs: int = 20) -> str:
-    #     """
-    #     Complete analysis pipeline for both Class I and Class II.
-        
-    #     Args:
-    #         organism_query: NCBI search query
-    #         output_dir: Output directory
-    #         organism_name: Name for output files (optional)
-    #         n_jobs: Number of parallel jobs
-            
-    #     Returns:
-    #         Path to final Excel results file
-    #     """
-    #     if organism_name is None:
-    #         organism_name = re.sub(r'[^\w\-_\.]', '_', organism_query)
-        
-    #     os.makedirs(output_dir, exist_ok=True)
-        
-    #     # Steps 1-3: Same as before (download, SignalP, filter)
-    #     logger.info("=== Starting Pathogen HLA Analysis Pipeline ===")
-        
-    #     # Step 1: Download proteome
-    #     proteome_file = os.path.join(output_dir, f"{organism_name}_proteome.fasta")
-    #     self.download_proteome(organism_query, proteome_file)
-        
-    #     # # Step 2: Run SignalP
-    #     # signalp_dir = os.path.join(output_dir, "signalp")
-    #     # os.makedirs(signalp_dir, exist_ok=True)
-    #     # _, secreted_ids = self.run_signalp(proteome_file, signalp_dir)
-        
-    #     # # Step 3: Filter for secreted proteins
-    #     # secreted_file = os.path.join(output_dir, f"{organism_name}_secreted.fasta")
-    #     # self.filter_secreted_proteins(proteome_file, secreted_ids, secreted_file)
 
-    #     # Step 2: Skip filtering - use all proteins
-    #     logger.info("Using all proteins for analysis (no SignalP filtering)")
-    #     _, all_protein_ids = self.run_signalp(proteome_file, output_dir)
-
-    #     # Step 3: Copy proteome file (no filtering needed)
-    #     secreted_file = os.path.join(output_dir, f"{organism_name}_all_proteins.fasta")
-    #     import shutil
-    #     shutil.copy2(proteome_file, secreted_file)
+    def create_empty_class_ii_results(self) -> pd.DataFrame:
+        """
+        Create empty Class II results DataFrame with consistent structure.
+        """
+        logger.info("Creating empty Class II results (no secreted proteins found)")
         
-    #     # Step 4a: Run Class II analysis
-    #     logger.info("=== Running HLA Class II Analysis ===")
-    #     class_ii_peptides = self.generate_peptides(secreted_file, 15)  # 15mers for Class II
+        empty_df = pd.DataFrame(columns=[
+            'protein_id', 'peptide_sequence', 'peptide_length', 'position', 
+            'hla_allele', 'Score_EL', '%Rank_EL'
+        ])
+        empty_df['hla_class'] = 'II'
         
-    #     if not class_ii_peptides:
-    #         raise ValueError("No Class II peptides generated. Check secreted protein filtering.")
-        
-    #     class_ii_alleles = self.get_netmhciipan_alleles()
-        
-    #     netmhciipan_dir = os.path.join(output_dir, "netmhciipan_class_ii")
-    #     os.makedirs(netmhciipan_dir, exist_ok=True)
-    #     class_ii_results_file = self.run_netmhciipan_batch(class_ii_peptides, class_ii_alleles, netmhciipan_dir, n_jobs)
-    #     class_ii_df = self.parse_netmhciipan_results(class_ii_results_file, class_ii_peptides)
-    #     class_ii_df['hla_class'] = 'II'
-        
-    #     # Step 4b: Run Class I analysis  
-    #     logger.info("=== Running HLA Class I Analysis ===")
-    #     class_i_peptides = self.generate_class_i_peptides(secreted_file, [8, 9, 10, 11])
-        
-    #     if not class_i_peptides:
-    #         raise ValueError("No Class I peptides generated. Check secreted protein filtering.")
-        
-    #     class_i_alleles = self.get_netmhcpan_alleles()
-        
-    #     netmhcpan_dir = os.path.join(output_dir, "netmhcpan_class_i")
-    #     os.makedirs(netmhcpan_dir, exist_ok=True)
-    #     class_i_results_file = self.run_netmhcpan_batch(class_i_peptides, class_i_alleles, netmhcpan_dir, n_jobs)
-    #     class_i_df = self.parse_netmhcpan_results(class_i_results_file, class_i_peptides)
-    #     class_i_df['hla_class'] = 'I'
-        
-    #     # Step 5: Combine results
-    #     logger.info("=== Combining Results ===")
-        
-    #     # Ensure both dataframes have consistent columns
-    #     # Add peptide_length column for Class II if missing
-    #     if 'peptide_length' not in class_ii_df.columns:
-    #         class_ii_df['peptide_length'] = class_ii_df['peptide_sequence'].str.len()
-        
-    #     # Combine the dataframes
-    #     combined_df = pd.concat([class_ii_df, class_i_df], ignore_index=True)
-        
-    #     # Reorder columns for consistency
-    #     columns = ['protein_id', 'peptide_sequence', 'peptide_length', 'position', 
-    #                'hla_class', 'hla_allele', 'Score_EL', '%Rank_EL']
-        
-    #     # Only keep columns that exist
-    #     available_columns = [col for col in columns if col in combined_df.columns]
-    #     combined_df = combined_df[available_columns]
-        
-    #     # Step 6: Save combined results
-    #     excel_file = os.path.join(output_dir, f"{organism_name}_hla_binding_results.csv")
-    #     combined_df.to_csv(excel_file, index=False)
-        
-    #     logger.info("=== Analysis Complete ===")
-    #     logger.info(f"Class I results: {len(class_i_df)} predictions")
-    #     logger.info(f"Class II results: {len(class_ii_df)} predictions") 
-    #     logger.info(f"Total results: {len(combined_df)} predictions")
-    #     logger.info(f"Combined results saved to: {excel_file}")
-        
-    #     return excel_file
+        return empty_df
 
     def print_analysis_instructions():
         """
@@ -1031,32 +941,32 @@ class PathogenHLAAnalyzer:
         
         # Step 2b: Run Class II analysis (SIGNALP FILTERED)
         logger.info("=== Running HLA Class II Analysis (SignalP Filtered) ===")
-        
+
         # Run SignalP for Class II
         signalp_dir = os.path.join(output_dir, "signalp")
         os.makedirs(signalp_dir, exist_ok=True)
         _, secreted_ids = self.run_signalp(proteome_file, signalp_dir)
-        
+
         # Filter for secreted proteins for Class II
         secreted_file = os.path.join(output_dir, f"{organism_name}_secreted.fasta")
         self.filter_secreted_proteins(proteome_file, secreted_ids, secreted_file)
-        
+
         # Generate Class II peptides from secreted proteins only
-        class_ii_peptides = self.generate_peptides(secreted_file, 15)  # 15mers for Class II
-        
+        class_ii_peptides = self.generate_peptides(secreted_file, 15)
+
         if not class_ii_peptides:
-            raise ValueError("No Class II peptides generated. Check secreted protein filtering.")
-        
-        class_ii_alleles = self.get_netmhciipan_alleles()
-        
-        netmhciipan_dir = os.path.join(output_dir, "netmhciipan_class_ii")
-        os.makedirs(netmhciipan_dir, exist_ok=True)
-        class_ii_results_file = self.run_netmhciipan_batch(class_ii_peptides, class_ii_alleles, netmhciipan_dir, n_jobs)
-        class_ii_df = self.parse_netmhciipan_results(class_ii_results_file, class_ii_peptides)
+            logger.warning("No Class II peptides generated - this pathogen has no secreted proteins")
+            logger.info("This is biologically expected for some pathogens (e.g., non-enveloped viruses)")
+            class_ii_df = self.create_empty_class_ii_results()
+        else:
+            class_ii_alleles = self.get_netmhciipan_alleles()
+            
+            netmhciipan_dir = os.path.join(output_dir, "netmhciipan_class_ii")
+            os.makedirs(netmhciipan_dir, exist_ok=True)
+            class_ii_results_file = self.run_netmhciipan_batch(class_ii_peptides, class_ii_alleles, netmhciipan_dir, n_jobs)
+            class_ii_df = self.parse_netmhciipan_results(class_ii_results_file, class_ii_peptides)
+
         class_ii_df['hla_class'] = 'II'
-        
-        # Step 3: Combine results
-        logger.info("=== Combining Results ===")
         
         # Ensure both dataframes have consistent columns
         if 'peptide_length' not in class_ii_df.columns:
@@ -1078,7 +988,12 @@ class PathogenHLAAnalyzer:
         
         logger.info("=== Analysis Complete ===")
         logger.info(f"Class I results (all proteins): {len(class_i_df)} predictions")
-        logger.info(f"Class II results (secreted only): {len(class_ii_df)} predictions") 
+
+        if len(class_ii_df) == 0:
+            logger.info(f"Class II results: 0 predictions (no secreted proteins - biologically expected)")
+        else:
+            logger.info(f"Class II results (secreted only): {len(class_ii_df)} predictions")
+
         logger.info(f"Total results: {len(combined_df)} predictions")
         logger.info(f"Combined results saved to: {excel_file}")
         

@@ -49,7 +49,7 @@ pip install biopython pandas
 
 ```bash
 # Make scripts executable
-chmod +x hla_epitope_predictor.py analyze_predictions.py
+chmod +x hla_epitope_predictor.py analyse_predictions.py
 
 # Run analysis for one organism
 python3 hla_epitope_predictor.py \
@@ -69,12 +69,12 @@ chmod +x run_pathogen_analysis.sh
 ./run_pathogen_analysis.sh
 ```
 
-### 4. Analyze Results
+### 4. Analyse Results
 
 ```bash
-python3 analyze_predictions.py --batch \
+python3 analyse_predictions.py --batch \
     smallpox_analysis HIV_analysis plague_analysis \
-    --output-dir ./analyzed_results
+    --output-dir ./analysed_results
 ```
 
 ## File Structure
@@ -82,7 +82,7 @@ python3 analyze_predictions.py --batch \
 ```
 scripts/HLA_epitope_prediction/
 ├── hla_epitope_predictor.py       # Main prediction pipeline
-├── analyze_predictions.py          # Results analysis
+├── analyse_predictions.py          # Results analysis
 ├── run_pathogen_analysis.sh        # Batch runner for 29 pathogens
 ├── alleles_class_i_default.txt     # Default Class I alleles (45)
 ├── alleles_class_ii_default.txt    # Default Class II alleles (189)
@@ -140,22 +140,34 @@ python3 hla_epitope_predictor.py \
     --output-dir ./smallpox_analysis  # Same directory!
 ```
 
-### Example 4: Analyze Results
+### Example 4: Analyse Results
+
+The analysis script now reports detailed per-allele statistics including:
+- Number of unique proteins with strong binders
+- Percentage of strong binders (rank < threshold) for each HLA allele
+- Percentage of weak binders (rank between strong and weak thresholds) for each HLA allele
 
 ```bash
 # Single organism
-python3 analyze_predictions.py \
+python3 analyse_predictions.py \
     --input smallpox_analysis/smallpox_hla_predictions.csv \
-    --class-i-threshold 0.5 \
-    --class-ii-threshold 1.0
+    --class-i-strong 0.5 \
+    --class-i-weak 2.0 \
+    --class-ii-strong 1.0 \
+    --class-ii-weak 5.0
 
 # Multiple organisms
-python3 analyze_predictions.py --batch \
+python3 analyse_predictions.py --batch \
     smallpox_analysis \
     HIV_analysis \
     plague_analysis \
-    --output-dir ./analyzed_results
+    --output-dir ./analysed_results
 ```
+
+Output files:
+- `{organism}_class_i_allele_statistics.tsv` - Per-allele statistics for Class I
+- `{organism}_class_ii_allele_statistics.tsv` - Per-allele statistics for Class II
+- `{organism}_summary.tsv` - Overall summary statistics
 
 ## Output Files
 

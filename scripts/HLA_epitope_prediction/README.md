@@ -5,11 +5,30 @@ Comprehensive pipeline for predicting HLA Class I and II epitopes from pathogen 
 ## Features
 
 - **HLA Class I & II prediction** using netMHCpan and netMHCIIpan
+- **RefSeq reference sequences**: Uses NCBI-curated reference genomes for consistency
 - **Incremental processing**: Add new alleles without re-running completed ones
 - **Progress tracking**: Resume from failures automatically
 - **Configurable alleles**: Load from external files
 - **Memory-efficient**: Adjustable parallelization
 - **Modular design**: Clean, maintainable code
+
+## NCBI Query Format
+
+This pipeline uses **RefSeq[Filter]** in all organism queries to ensure:
+
+- ✅ **High-quality sequences**: NCBI-curated reference genomes only
+- ✅ **Non-redundant**: Eliminates duplicate sequences from the same organism
+- ✅ **Consistent annotation**: Standardized gene/protein nomenclature
+- ✅ **Reproducibility**: Same reference strain across analyses
+- ✅ **No strain name issues**: Avoids "strain not found" errors
+
+**Example query format:**
+```bash
+"Variola virus[Organism] AND RefSeq[Filter]"
+"Mycobacterium tuberculosis[Organism] AND RefSeq[Filter]"
+```
+
+This automatically fetches the official RefSeq reference genome without needing to specify exact strain names.
 
 ## Quick Start
 
@@ -64,11 +83,11 @@ python3 analyze_predictions.py --batch \
 scripts/HLA_epitope_prediction/
 ├── hla_epitope_predictor.py       # Main prediction pipeline
 ├── analyze_predictions.py          # Results analysis
-├── run_pathogen_analysis.sh        # Batch runner
+├── run_pathogen_analysis.sh        # Batch runner for 29 pathogens
 ├── alleles_class_i_default.txt     # Default Class I alleles (45)
 ├── alleles_class_ii_default.txt    # Default Class II alleles (189)
 ├── README.md                        # This file
-├── IMPROVEMENTS.md                  # Detailed documentation
+├── PERFORMANCE_GUIDE.md             # Performance tuning guide
 └── requirements.txt                 # Python dependencies
 ```
 
@@ -270,6 +289,7 @@ python3 hla_epitope_predictor.py \
 
 | Feature | Old Version | New Version |
 |---------|-------------|-------------|
+| Organism queries | Exact strain names | RefSeq filter (automatic) |
 | Alleles | Hardcoded in Python | External text files |
 | Adding alleles | Re-run all (hours) | Only new ones (minutes) |
 | Progress tracking | None | `completed_alleles.json` |
@@ -278,8 +298,6 @@ python3 hla_epitope_predictor.py \
 | Error handling | Fail entire run | Continue on errors |
 | Code organization | Monolithic (1119 lines) | Modular (950 lines) |
 | Documentation | Limited | Comprehensive |
-
-See `IMPROVEMENTS.md` for detailed comparison.
 
 ## Advanced Usage
 
@@ -334,7 +352,7 @@ If you use this pipeline, please cite the underlying tools:
 ## Support
 
 For issues or questions:
-1. Check `IMPROVEMENTS.md` for detailed documentation
+1. Check `PERFORMANCE_GUIDE.md` for performance tuning
 2. Review log output for error messages
 3. Verify tool paths are correct
 4. Check `completed_alleles.json` for progress

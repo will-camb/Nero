@@ -537,7 +537,10 @@ class ResultParser:
                         continue
 
         if not all_results:
-            raise ValueError(f"No valid results found in {results_file}")
+            logger.warning(f"No valid results found in {results_file} - returning empty DataFrame")
+            return pd.DataFrame(columns=['protein_id', 'peptide_sequence', 'position',
+                                        'peptide_length', 'hla_class', 'hla_allele',
+                                        'score', 'rank'])
 
         df = pd.DataFrame(all_results)
         logger.info(f"Parsed {len(df)} Class {hla_class} predictions")
@@ -593,6 +596,14 @@ class HLAEpitopePipeline:
         signalp_dir = self.output_dir / "signalp"
         secreted_ids = self.signalp.run(proteome_file, signalp_dir, organism_type="other")
 
+        # Check if any secreted proteins were found
+        if not secreted_ids:
+            logger.warning("No secreted proteins found - skipping Class II analysis")
+            # Return empty DataFrame with correct structure
+            return pd.DataFrame(columns=['protein_id', 'peptide_sequence', 'position',
+                                        'peptide_length', 'hla_class', 'hla_allele',
+                                        'score', 'rank'])
+
         secreted_file = self.output_dir / f"{self.config.organism_name}_secreted.fasta"
         self.signalp.filter_fasta(proteome_file, secreted_file, secreted_ids)
 
@@ -602,6 +613,13 @@ class HLAEpitopePipeline:
             self.config.class_ii_peptide_length,
             self.config.class_ii_step_size
         )
+
+        # Check if any peptides were generated
+        if not peptides:
+            logger.warning("No peptides generated from secreted proteins - skipping Class II analysis")
+            return pd.DataFrame(columns=['protein_id', 'peptide_sequence', 'position',
+                                        'peptide_length', 'hla_class', 'hla_allele',
+                                        'score', 'rank'])
 
         # Run predictions
         class_ii_dir = self.output_dir / "class_ii"

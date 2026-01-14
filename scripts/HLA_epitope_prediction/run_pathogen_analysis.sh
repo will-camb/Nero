@@ -80,60 +80,194 @@ run_analysis() {
     fi
 }
 
-# Run analyses for multiple pathogens
+# Run analyses for multiple pathogens using REFERENCE STRAINS
 # Syntax: run_analysis "NCBI query" "output_dir" "name" [n_jobs]
+#
+# Naming convention: Use common disease/pathogen names for easy interpretation
+# Format: lowercase with underscores (e.g., hepatitis_B, strep_pyogenes)
 
-# Small proteomes (can use more parallel jobs)
-run_analysis "Variola virus[Organism] AND RefSeq[Filter]" \
+echo "=========================================="
+echo "VIRAL PATHOGENS"
+echo "=========================================="
+
+# Poxviridae
+run_analysis "Variola virus strain Bangladesh-1975[Organism]" \
              "./smallpox_analysis" \
              "smallpox" \
              40
 
-run_analysis "HIV[Organism] AND RefSeq[Filter]" \
-             "./HIV_analysis" \
-             "HIV" \
-             40
-
-run_analysis "measles[Organism] AND RefSeq[Filter]" \
+# Paramyxoviridae
+run_analysis "Measles morbillivirus strain Edmonston[Organism]" \
              "./measles_analysis" \
              "measles" \
              40
 
-# Medium proteomes
-run_analysis "Yersinia pestis CO92[Organism] AND RefSeq[Filter]" \
+run_analysis "Mumps orthorubulavirus strain Enders[Organism]" \
+             "./mumps_analysis" \
+             "mumps" \
+             40
+
+# Togaviridae
+run_analysis "Rubella virus strain RA27/3[Organism]" \
+             "./rubella_analysis" \
+             "rubella" \
+             40
+
+# Retroviridae
+run_analysis "Human immunodeficiency virus 1 HXB2[Organism]" \
+             "./HIV_analysis" \
+             "HIV" \
+             40
+
+# Herpesviridae
+run_analysis "Human gammaherpesvirus 4 strain B95-8[Organism]" \
+             "./EBV_analysis" \
+             "EBV" \
+             40
+
+run_analysis "Human alphaherpesvirus 2 strain HG52[Organism]" \
+             "./herpes_simplex_2_analysis" \
+             "herpes_simplex_2" \
+             40
+
+run_analysis "Human alphaherpesvirus 3 strain Dumas[Organism]" \
+             "./varicella_zoster_analysis" \
+             "varicella_zoster" \
+             40
+
+# Polyomaviridae
+run_analysis "Merkel cell polyomavirus strain R17b[Organism]" \
+             "./merkel_polyomavirus_analysis" \
+             "merkel_polyomavirus" \
+             40
+
+run_analysis "JC polyomavirus strain Mad1[Organism]" \
+             "./JC_polyomavirus_analysis" \
+             "JC_polyomavirus" \
+             40
+
+# Hepadnaviridae
+run_analysis "Hepatitis B virus subtype adw2[Organism]" \
+             "./hepatitis_B_analysis" \
+             "hepatitis_B" \
+             40
+
+# Flaviviridae
+run_analysis "Hepatitis C virus genotype 1[Organism]" \
+             "./hepatitis_C_analysis" \
+             "hepatitis_C" \
+             40
+
+echo ""
+echo "=========================================="
+echo "BACTERIAL PATHOGENS"
+echo "=========================================="
+
+# Yersinia pestis - Plague
+run_analysis "Yersinia pestis CO92[Organism]" \
              "./plague_analysis" \
              "plague" \
              30
 
-run_analysis "Mycobacterium leprae[Organism] AND RefSeq[Filter]" \
+# Mycobacterium tuberculosis - Tuberculosis
+run_analysis "Mycobacterium tuberculosis H37Rv[Organism]" \
+             "./tuberculosis_analysis" \
+             "tuberculosis" \
+             30
+
+# Mycobacterium leprae - Leprosy
+run_analysis "Mycobacterium leprae TN[Organism]" \
              "./leprosy_analysis" \
              "leprosy" \
              30
 
-run_analysis "Borrelia recurrentis[Organism] AND RefSeq[Filter]" \
-             "./B_recurrentis_analysis" \
-             "B_recurrentis" \
+# Salmonella typhi - Typhoid fever
+run_analysis "Salmonella enterica subsp. enterica serovar Typhi str. CT18[Organism]" \
+             "./typhoid_analysis" \
+             "typhoid" \
              30
 
-run_analysis "Treponema pallidum[Organism] AND RefSeq[Filter]" \
-             "./T_pallidum_analysis" \
-             "T_pallidum" \
+# Treponema pallidum - Syphilis
+run_analysis "Treponema pallidum subsp. pallidum str. Nichols[Organism]" \
+             "./syphilis_analysis" \
+             "syphilis" \
              30
 
-# Large proteomes (reduce parallel jobs to avoid memory issues)
-run_analysis "Leptospira interrogans Copenhageni[Organism] AND RefSeq[Filter]" \
-             "./L_interrogans_analysis" \
-             "L_interrogans" \
+# Streptococcus pyogenes - Group A Strep (scarlet fever, necrotizing fasciitis)
+run_analysis "Streptococcus pyogenes M1 GAS[Organism]" \
+             "./strep_pyogenes_analysis" \
+             "strep_pyogenes" \
+             30
+
+# Streptococcus pneumoniae - Pneumococcus (pneumonia, meningitis)
+run_analysis "Streptococcus pneumoniae TIGR4[Organism]" \
+             "./pneumococcus_analysis" \
+             "pneumococcus" \
+             30
+
+# Borrelia recurrentis - Relapsing fever
+run_analysis "Borrelia recurrentis A1[Organism]" \
+             "./relapsing_fever_analysis" \
+             "relapsing_fever" \
+             30
+
+# Brucella melitensis - Brucellosis
+run_analysis "Brucella melitensis 16M[Organism]" \
+             "./brucellosis_analysis" \
+             "brucellosis" \
+             30
+
+# Listeria monocytogenes - Listeriosis
+run_analysis "Listeria monocytogenes EGD-e[Organism]" \
+             "./listeriosis_analysis" \
+             "listeriosis" \
+             30
+
+# Leptospira interrogans - Leptospirosis
+run_analysis "Leptospira interrogans serovar Copenhageni str. Fiocruz L1-130[Organism]" \
+             "./leptospirosis_analysis" \
+             "leptospirosis" \
              20
 
-run_analysis "Mycobacterium tuberculosis H37Rv[Organism] AND RefSeq[Filter]" \
-             "./M_tuberculosis_analysis" \
-             "M_tuberculosis" \
+# Vibrio cholerae - Cholera
+run_analysis "Vibrio cholerae O1 biovar El Tor str. N16961[Organism]" \
+             "./cholera_analysis" \
+             "cholera" \
+             30
+
+# Corynebacterium diphtheriae - Diphtheria
+run_analysis "Corynebacterium diphtheriae NCTC 13129[Organism]" \
+             "./diphtheria_analysis" \
+             "diphtheria" \
+             30
+
+# Bacillus anthracis - Anthrax
+run_analysis "Bacillus anthracis str. Ames[Organism]" \
+             "./anthrax_analysis" \
+             "anthrax" \
+             30
+
+# Rickettsia prowazekii - Epidemic typhus
+run_analysis "Rickettsia prowazekii str. Madrid E[Organism]" \
+             "./typhus_analysis" \
+             "typhus" \
+             30
+
+echo ""
+echo "=========================================="
+echo "PARASITIC PATHOGENS"
+echo "=========================================="
+
+# Plasmodium vivax - Malaria (tertian)
+run_analysis "Plasmodium vivax Sal-1[Organism]" \
+             "./malaria_vivax_analysis" \
+             "malaria_vivax" \
              20
 
-run_analysis "Plasmodium vivax[Organism] AND RefSeq[Filter]" \
-             "./P_vivax_analysis" \
-             "P_vivax" \
+# Plasmodium falciparum - Malaria (falciparum)
+run_analysis "Plasmodium falciparum 3D7[Organism]" \
+             "./malaria_falciparum_analysis" \
+             "malaria_falciparum" \
              20
 
 echo ""

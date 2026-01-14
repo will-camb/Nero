@@ -478,9 +478,13 @@ class ResultParser:
 
         all_results = []
         current_allele = None
+        lines_processed = 0
+        alleles_found = []
+        data_lines_attempted = 0
 
         with open(results_file) as f:
             for line in f:
+                lines_processed += 1
                 line = line.strip()
 
                 if not line:
@@ -490,9 +494,13 @@ class ResultParser:
                 if '\t' not in line and (line.startswith('HLA-') or
                                         line.startswith('DRB') or
                                         line.startswith('DQA') or
-                                        line.startswith('DPA')):
+                                        line.startswith('DPA') or
+                                        line.startswith('DPB') or
+                                        line.startswith('DQB')):
                     if 'Pos' not in line:
                         current_allele = line
+                        alleles_found.append(line)
+                        logger.debug(f"Found allele: {current_allele}")
                     continue
 
                 # Skip header lines
@@ -502,6 +510,7 @@ class ResultParser:
                 # Parse data lines
                 parts = line.split('\t')
                 if len(parts) >= 7 and parts[0].isdigit():
+                    data_lines_attempted += 1
                     try:
                         peptide_seq = parts[1]
 
@@ -536,8 +545,26 @@ class ResultParser:
                         logger.debug(f"Could not parse line: {line[:100]}")
                         continue
 
+        # Diagnostic logging
+        logger.info(f"Parse diagnostics: {lines_processed} lines processed, "
+                   f"{len(alleles_found)} alleles found, "
+                   f"{data_lines_attempted} data lines attempted, "
+                   f"{len(all_results)} results parsed")
+
+        if alleles_found:
+            logger.info(f"Alleles detected: {', '.join(alleles_found[:5])}..." if len(alleles_found) > 5 else f"Alleles detected: {', '.join(alleles_found)}")
+
         if not all_results:
-            logger.warning(f"No valid results found in {results_file} - returning empty DataFrame")
+            logger.warning(f"No valid results found in {results_file}")
+            logger.warning(f"Diagnostics: {lines_processed} total lines, {len(alleles_found)} alleles found, {data_lines_attempted} data lines attempted")
+            if data_lines_attempted == 0:
+                logger.warning("No data lines matched the expected format (7+ columns, first column digit)")
+                # Sample first few non-empty lines for debugging
+                with open(results_file) as f:
+                    sample_lines = [line.strip() for line in f if line.strip()][:10]
+                    logger.warning(f"First few lines of file for debugging:")
+                    for i, line in enumerate(sample_lines, 1):
+                        logger.warning(f"  Line {i}: {line[:200]}")
             return pd.DataFrame(columns=['protein_id', 'peptide_sequence', 'position',
                                         'peptide_length', 'hla_class', 'hla_allele',
                                         'score', 'rank'])

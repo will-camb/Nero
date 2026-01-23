@@ -43,6 +43,10 @@ echo "Class II alleles: $CLASS_II_ALLELES"
 echo ""
 
 # Function to run analysis for one organism
+# Note: Temporary files are automatically managed:
+#   - Created in output_dir/temp (not /tmp)
+#   - Automatically cleaned up after successful completion
+#   - Prevents /tmp from filling up on remote servers
 run_analysis() {
     local organism_query="$1"
     local output_dir="$2"

@@ -48,6 +48,7 @@ class AnalysisConfig:
     class_ii_step_size: int = 3
     batch_size_proteins: int = 100
     max_proteins: int = 15000
+    temp_dir: Optional[Path] = None
 
     def __post_init__(self):
         if self.class_i_peptide_lengths is None:
@@ -56,6 +57,16 @@ class AnalysisConfig:
         self.netmhcpan_path = Path(self.netmhcpan_path)
         self.netmhciipan_path = Path(self.netmhciipan_path)
         self.signalp_model_dir = Path(self.signalp_model_dir)
+
+        # Set up temp directory
+        if self.temp_dir is None:
+            # Default: use a temp subdirectory within output_dir
+            self.temp_dir = self.output_dir / "temp"
+        else:
+            self.temp_dir = Path(self.temp_dir)
+
+        self.temp_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Temporary files will be stored in: {self.temp_dir}")
 
 
 class ProteomeDownloader:
@@ -308,11 +319,12 @@ class PeptideGenerator:
 class HLAPredictor:
     """Base class for HLA binding prediction."""
 
-    def __init__(self, tool_path: Path, output_dir: Path):
+    def __init__(self, tool_path: Path, output_dir: Path, temp_dir: Optional[Path] = None):
         self.tool_path = tool_path
         self.output_dir = output_dir
         self.results_dir = output_dir / "allele_results"
         self.results_dir.mkdir(parents=True, exist_ok=True)
+        self.temp_dir = temp_dir
 
         if not self.tool_path.exists():
             raise FileNotFoundError(f"Tool not found: {self.tool_path}")
@@ -381,12 +393,18 @@ class HLAPredictor:
                 cmd = self._build_command(allele, peptide_file, result_file)
                 f.write(f"{cmd}\n")
 
-        # Run in parallel
+        # Run in parallel with TMPDIR set to redirect temporary files
         logger.info(f"Running {len(alleles_to_run)} predictions with {n_jobs} parallel jobs...")
         parallel_cmd = f"cat {commands_file} | parallel -j {n_jobs}"
 
+        # Set environment with custom TMPDIR to control temporary file location
+        env = os.environ.copy()
+        if self.temp_dir:
+            env['TMPDIR'] = str(self.temp_dir)
+            logger.info(f"Setting TMPDIR={self.temp_dir} for netMHC tools")
+
         try:
-            subprocess.run(parallel_cmd, shell=True, check=True, capture_output=True, text=True)
+            subprocess.run(parallel_cmd, shell=True, check=True, capture_output=True, text=True, env=env)
             logger.info("Predictions completed successfully")
 
             # Mark all as complete
@@ -603,7 +621,7 @@ class HLAEpitopePipeline:
 
         # Run predictions
         class_i_dir = self.output_dir / "class_i"
-        predictor = NetMHCpanPredictor(self.config.netmhcpan_path, class_i_dir)
+        predictor = NetMHCpanPredictor(self.config.netmhcpan_path, class_i_dir, self.config.temp_dir)
         results_file = predictor.run_predictions(
             peptides, alleles, self.config.n_parallel_jobs
         )
@@ -650,7 +668,7 @@ class HLAEpitopePipeline:
 
         # Run predictions
         class_ii_dir = self.output_dir / "class_ii"
-        predictor = NetMHCIIpanPredictor(self.config.netmhciipan_path, class_ii_dir)
+        predictor = NetMHCIIpanPredictor(self.config.netmhciipan_path, class_ii_dir, self.config.temp_dir)
         results_file = predictor.run_predictions(
             peptides, alleles, self.config.n_parallel_jobs
         )
@@ -712,7 +730,28 @@ class HLAEpitopePipeline:
         logger.info(f"Total: {len(combined_df)} predictions")
         logger.info(f"Results: {results_file}")
 
+        # Clean up temporary files
+        self._cleanup_temp_files()
+
         return results_file
+
+    def _cleanup_temp_files(self):
+        """Clean up temporary files created during analysis."""
+        if self.config.temp_dir and self.config.temp_dir.exists():
+            try:
+                # Count files before cleanup
+                temp_files = list(self.config.temp_dir.glob("*"))
+                if temp_files:
+                    logger.info(f"Cleaning up {len(temp_files)} temporary files from {self.config.temp_dir}")
+                    shutil.rmtree(self.config.temp_dir)
+                    # Recreate empty temp dir for potential future use
+                    self.config.temp_dir.mkdir(parents=True, exist_ok=True)
+                    logger.info("Temporary files cleaned up successfully")
+                else:
+                    logger.info("No temporary files to clean up")
+            except Exception as e:
+                logger.warning(f"Failed to clean up temporary files: {e}")
+                logger.warning("You may need to manually remove files from: {self.config.temp_dir}")
 
 
 def load_alleles_from_file(file_path: Path) -> List[str]:
@@ -889,6 +928,11 @@ Examples:
                        default="/home/jdn321/software/signalp6_fast/signalp-6-package/models/",
                        help="Path to SignalP6 models directory")
 
+    # Temporary file management
+    parser.add_argument("--temp-dir", type=Path,
+                       help="Directory for temporary files (default: output_dir/temp). "
+                            "netMHC tools create temporary files that can fill /tmp on servers.")
+
     # Processing parameters
     parser.add_argument("--n-jobs", type=int, default=20,
                        help="Number of parallel jobs (default: 20)")
@@ -927,7 +971,8 @@ Examples:
         class_i_step_size=args.class_i_step,
         class_ii_peptide_length=args.class_ii_length,
         class_ii_step_size=args.class_ii_step,
-        max_proteins=args.max_proteins
+        max_proteins=args.max_proteins,
+        temp_dir=args.temp_dir
     )
 
     # Load or use default alleles

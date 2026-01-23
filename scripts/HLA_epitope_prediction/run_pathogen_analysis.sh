@@ -26,10 +26,10 @@ N_JOBS=30
 # Peptide generation parameters (conservative defaults for ~10x speedup)
 # Class I: 9-mers only (instead of 8,9,10,11)
 # Step size: 3 (instead of 1 = fully overlapping)
-CLASS_I_LENGTHS="9"
-CLASS_I_STEP=3
+CLASS_I_LENGTHS="8 9 10 11"
+CLASS_I_STEP=1
 CLASS_II_LENGTH=15
-CLASS_II_STEP=3
+CLASS_II_STEP=1
 
 echo "============================================"
 echo "HLA Epitope Prediction Pipeline"
@@ -185,7 +185,7 @@ run_analysis "Mycobacterium leprae[Organism] AND RefSeq[Filter]" \
              30
 
 # Salmonella typhi - Typhoid fever
-run_analysis "Salmonella enterica serovar Typhi CT18[Organism] AND RefSeq[Filter]" \
+run_analysis "Salmonella Typhi CT18[Organism] AND RefSeq[Filter]" \
              "./typhoid_analysis" \
              "typhoid" \
              30
@@ -203,13 +203,13 @@ run_analysis "Treponema pallidum pertenue[Organism] AND RefSeq[Filter]" \
              30
 
 # Streptococcus pyogenes - Group A Strep (scarlet fever, necrotizing fasciitis)
-run_analysis "Streptococcus pyogenes[Organism] AND RefSeq[Filter]" \
+run_analysis "Streptococcus pyogenes M1 GAS[Organism] AND RefSeq[Filter]" \
              "./strep_pyogenes_analysis" \
              "strep_pyogenes" \
              30
 
 # Streptococcus pneumoniae - Pneumococcus (pneumonia, meningitis)
-run_analysis "Streptococcus pneumoniae[Organism] AND RefSeq[Filter]" \
+run_analysis "Streptococcus pneumoniae D39[Organism] AND RefSeq[Filter]" \
              "./pneumococcus_analysis" \
              "pneumococcus" \
              30
@@ -221,7 +221,7 @@ run_analysis "Borrelia recurrentis[Organism] AND RefSeq[Filter]" \
              30
 
 # Brucella melitensis - Brucellosis
-run_analysis "Brucella melitensis[Organism] AND RefSeq[Filter]" \
+run_analysis "Brucella melitensis 16M[Organism] AND RefSeq[Filter]" \
              "./brucellosis_analysis" \
              "brucellosis" \
              30
@@ -236,10 +236,10 @@ run_analysis "Listeria monocytogenes[Organism] AND RefSeq[Filter]" \
 run_analysis "Leptospira interrogans Copenhageni[Organism] AND RefSeq[Filter]" \
              "./leptospirosis_analysis" \
              "leptospirosis" \
-             20
+             30
 
 # Vibrio cholerae - Cholera
-run_analysis "Vibrio cholerae[Organism] AND RefSeq[Filter]" \
+run_analysis "Vibrio cholerae O395[Organism] AND RefSeq[Filter]" \
              "./cholera_analysis" \
              "cholera" \
              30
@@ -271,13 +271,13 @@ echo "=========================================="
 run_analysis "Plasmodium vivax PvP01[Organism] AND RefSeq[Filter]" \
              "./malaria_vivax_analysis" \
              "malaria_vivax" \
-             20
+             40
 
 # Plasmodium falciparum - Malaria (falciparum)
 run_analysis "Plasmodium falciparum 3D7[Organism] AND RefSeq[Filter]" \
              "./malaria_falciparum_analysis" \
              "malaria_falciparum" \
-             20
+             40
 
 echo ""
 echo "============================================"

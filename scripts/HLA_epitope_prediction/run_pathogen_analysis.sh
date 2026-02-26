@@ -142,6 +142,11 @@ run_analysis "Human alphaherpesvirus 3[Organism] AND RefSeq[Filter]" \
              "varicella_zoster" \
              50
 
+run_analysis "Herpes Simplex Virus Type 1[Organism] AND RefSeq[Filter]" \
+             "./HSV-1_analysis" \
+             "HSV-1" \
+             50
+
 # Polyomaviridae
 run_analysis "Merkel cell polyomavirus[Organism] AND RefSeq[Filter]" \
              "./merkel_polyomavirus_analysis" \
@@ -231,15 +236,9 @@ run_analysis "Brucella melitensis 16M[Organism] AND RefSeq[Filter]" \
              30
 
 # Listeria monocytogenes - Listeriosis
-run_analysis "Listeria monocytogenes[Organism] AND RefSeq[Filter]" \
+run_analysis "Listeria monocytogenes 10403S[Organism] AND RefSeq[Filter]" \
              "./listeriosis_analysis" \
              "listeriosis" \
-             30
-
-# Leptospira interrogans - Leptospirosis
-run_analysis "Leptospira interrogans Copenhageni[Organism] AND RefSeq[Filter]" \
-             "./leptospirosis_analysis" \
-             "leptospirosis" \
              30
 
 # Vibrio cholerae - Cholera
@@ -249,21 +248,21 @@ run_analysis "Vibrio cholerae O395[Organism] AND RefSeq[Filter]" \
              30
 
 # Corynebacterium diphtheriae - Diphtheria
-run_analysis "Corynebacterium diphtheriae[Organism] AND RefSeq[Filter]" \
+run_analysis "Corynebacterium diphtheriae NCTC 13129[Organism] AND RefSeq[Filter]" \
              "./diphtheria_analysis" \
              "diphtheria" \
              30
 
 # Bacillus anthracis - Anthrax
-run_analysis "Bacillus anthracis[Organism] AND RefSeq[Filter]" \
+run_analysis "Bacillus anthracis Ames[Organism] AND RefSeq[Filter]" \
              "./anthrax_analysis" \
              "anthrax" \
              30
 
-# Rickettsia prowazekii - Epidemic typhus
-run_analysis "Rickettsia prowazekii[Organism] AND RefSeq[Filter]" \
-             "./typhus_analysis" \
-             "typhus" \
+# Clostridium difficile
+run_analysis "Clostridium difficile 630[Organism] AND RefSeq[Filter]" \
+             "./c_difficile_analysis" \
+             "c_difficile" \
              30
 
 echo ""
@@ -272,7 +271,7 @@ echo "PARASITIC PATHOGENS"
 echo "=========================================="
 
 # Plasmodium vivax - Malaria (tertian)
-run_analysis "Plasmodium vivax PvP01[Organism] AND RefSeq[Filter]" \
+run_analysis "Plasmodium vivax [Organism] AND RefSeq[Filter]" \
              "./malaria_vivax_analysis" \
              "malaria_vivax" \
              40

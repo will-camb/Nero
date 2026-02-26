@@ -187,9 +187,6 @@ python3 pathogen_hla_binding_class_i_ii.py \
 
 •••••••••••••••••••••••••••••••••••••••••••••••••
 
-
-dandycomp05fl: falciparum
-
 echo "Analysis pipeline setup complete!"
 echo ""
 echo "IMPORTANT NOTES:"
